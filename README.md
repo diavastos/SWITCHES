@@ -8,10 +8,3 @@ In case you have any publications resulting from SWITCHES, please cite the follo
 [1] Andreas Diavastos and Pedro Trancoso. "SWITCHES: A Lightweight Runtime for Data-flow Execution of Tasks on Many-cores" Accepted for publication on ACM Transactions on Architecture and Code Optimization (TACO) 2017.
 
 
-
-__Installation__
-
-
-
-
-__Usage__
