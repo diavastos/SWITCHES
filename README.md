@@ -1,5 +1,5 @@
 # SWITCHES
-SWITCHES is a Parallel Programming Platform for Task-based Data-flow Execution. It is implemented for multi- and many-core processors that support a global address space (shared memory) and uses OpenMP v4.5 compiler directives for writting parallel applications.
+SWITCHESaaaaaaaaaaaaaa is a Parallel Programming Platform for Task-based Data-flow Execution. It is implemented for multi- and many-core processors that support a global address space (shared memory) and uses OpenMP v4.5 compiler directives for writting parallel applications.
 
 __Preface__
 
