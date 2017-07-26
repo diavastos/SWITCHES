@@ -57,7 +57,7 @@ void printVersion(){
 
 void printHelp(){
     
-    printf(ANSI_COLOR_MAGENTA "\n Usage:" ANSI_COLOR_GREEN "  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-tm] [-p <Option>] [-pin]\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\n Usage:" ANSI_COLOR_GREEN "  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-tm] [-p <Option>]\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\n     Example:" ANSI_COLOR_BLUE " ./switches -s phi -i main.c functions.c -t 4 -p screen -a compact\n\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t [-] Required:\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t -------------\n\n" ANSI_COLOR_RESET);
