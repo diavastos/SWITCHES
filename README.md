@@ -13,9 +13,9 @@ In case you have any publications resulting from SWITCHES, please cite the follo
 
 __Installation__
 
-$ cd Translator
-$ make
-$ export PATH=$PATH:/path/to/produced/binary
+$ cd Translator  
+$ make  
+$ export PATH=$PATH:/path/to/produced/binary  
  
 
 __Usage__
