@@ -20,16 +20,16 @@ $ export PATH=$PATH:/path/to/produced/binary
 
 __Usage__
 
-Usage:  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-tm] [-p <Option>] [-pin]
+Usage:  ./switches -s _System_ -i _inputFiles_ -t _numberOfThreads_ [-a _Option_] [-tm] [-p _Option_]
 
      Example: ./switches -s phi -i main.c functions.c -t 4 -p screen -a compact
 
 	 [-] Required:
 	 -------------
 
-	   * -s <System>          : phi
-	                            amd
-	                            office
+	   * -s <System>          : phi 
+	                            amd 
+	                            office 
 	   * -i <InputFiles>      : Input files that contain SW directives
 	   * -t <NumberOfThreads> : Number of threads to use for the execution
 
@@ -55,10 +55,11 @@ Usage:  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>
 	                           Mutation        : FLT (choices: 0.0-1.0, default: 0.1)
 	                           Crossover       : FLT (choices: 0.6-1.0, default: 0.6)
 
-	 [-] Optional: 
+	 [-] Optional:
 	 -------------
 
-	   * [-tm]           : Activate Transactional Memory   (NOT YET IMPLEMENTED)
-	   * [-p <Option>]   : Print the Synchronization Graph
-	                           Options: screen
-	                                    file
+	   * [-tm]              : Activate Transactional Memory   (NOT YET IMPLEMENTED)
+	   * [-p <Option>]      : Print the Synchronization Graph
+	                              Options: screen
+	                                       file
+	   * [-v] | [--version] : Print the current version of the Translator
