@@ -55,7 +55,7 @@ Usage:  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>
 	                           Mutation        : FLT (choices: 0.0-1.0, default: 0.1)
 	                           Crossover       : FLT (choices: 0.6-1.0, default: 0.6)
 
-	 [-] Optional:
+	 [-] Optional: 
 	 -------------
 
 	   * [-tm]           : Activate Transactional Memory   (NOT YET IMPLEMENTED)
