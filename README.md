@@ -13,7 +13,52 @@ In case you have any publications resulting from SWITCHES, please cite the follo
 
 __Installation__
 
-
+$ cd Translator
+$ make
+$ export PATH=$PATH:/path/to/produced/binary
  
 
 __Usage__
+
+Usage:  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-tm] [-p <Option>] [-pin]
+
+     Example: ./switches -s phi -i main.c functions.c -t 4 -p screen -a compact
+
+	 [-] Required:
+	 -------------
+
+	   * -s <System>          : phi
+	                            amd
+	                            office
+	   * -i <InputFiles>      : Input files that contain SW directives
+	   * -t <NumberOfThreads> : Number of threads to use for the execution
+
+	 [-] Scheduling (-sched)/Affinity (-a) Optimizations (Optional):
+	 ---------------------------------------------------------------
+
+	   * [-sched <Option>]   : roundRobin (default)
+	                           random 
+	                           file <File with Scheduling Policy>
+
+	   * [-a <Option>]       : none (default)
+	                           compact 
+	                           scatter 
+	                           hybrid 
+	                           random 
+
+	   * [-nsga <Option>]    : -f <fileName>
+	                           <population : generations : [NUM : objectives] : mutation : crossover> 
+	                           Population      : INT (must be multiple of 4, default: 12)
+	                           Generations     : INT (default: 50)
+	                           NUM             : INT (number of objectives to use)
+	                           Objectives      : STR (choices: performance | power | thermal, default: performance)
+	                           Mutation        : FLT (choices: 0.0-1.0, default: 0.1)
+	                           Crossover       : FLT (choices: 0.6-1.0, default: 0.6)
+
+	 [-] Optional:
+	 -------------
+
+	   * [-tm]           : Activate Transactional Memory   (NOT YET IMPLEMENTED)
+	   * [-p <Option>]   : Print the Synchronization Graph
+	                           Options: screen
+	                                    file
