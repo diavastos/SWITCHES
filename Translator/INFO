@@ -1,0 +1,98 @@
+/**************************************************/
+/*                                                */
+/*  File:        README                           */
+/*  Description: Describes the implementation     */
+/*               and the usage of SWitches        */
+/*                                                */
+/*  Author:      Andreas I. Diavastos             */
+/*  Contact:     diavastos@cs.ucy.ac.cy           */
+/*  Last Update: 01-07-2017                       */
+/*                                                */
+/**************************************************/
+
+
+Containers of each folder:
+==========================
+
+- include/ : Contains the library files of SWitches translator (.h files)
+- src/     : Contais all source code files of SWitches translator (.c files)
+
+
+
+A. include/:
+-----------
+
+[*] definitions.h:
+    -> All definitions of the Translator
+    -> Used for all SWitches source files
+    
+[*] prototypes.h:
+    -> The prototype functions of all sources of the Translator
+
+[*] SG_Structs.h:
+    -> Contains the structures of the runtime with the threads, the dependencie
+       and the scheduling policies, etc.
+
+[*] auxiliary_structs.h:
+    -> Helper structures used for internal usage of the Translator
+    
+[*] NSGA_Functions.h:
+    -> All data structures related to the NSGA algorithm
+
+  
+    
+################################################################################
+
+
+B. src/:
+-----------
+
+[*] Makefile:
+    -> Compiles all source files of the Translator
+    -> Move executable to the home directory of the Translator
+    
+[*] scanner.fl:
+    -> The SWitches lexical (flex) analyser for C language
+    
+[*] switches.y:
+    -> The Bison analyser for pragma directives
+    
+[*] commandLines.c:
+    -> Functions that read and store all command line arguments
+    -> If the command line arguments are not correct the appropriate
+       message will be shown
+    
+[*] printSourceCode.c:
+    -> Functions that prints parallel source code in new SWitches application
+
+[*] handleBisonRules.c:
+    -> Functions that connect the Bison rules with the procedures of the 
+       Translator (e.g.: Storing information to the SG)
+
+[*] auxiliary.c:
+    -> Helper functions used by the Translator for internal usage
+
+[*] SGFunctions.c:
+    -> All functions of the Translator that have to do with the SG
+
+[*] offlineScheduler.c:
+    -> Functions that will be used after building the first version of the SG
+       (that is when reading the pragma directives in the 1st parse). After the 
+       1st parse, the functions in this file will be used to apply the scheduling
+       policy and nay type of optimizations supported.
+       
+[*] NSGA_Functions.c:
+    -> Functions related to the execution of the NSGA algorithm
+
+
+
+
+
+
+
+
+
+
+
+
+

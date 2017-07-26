@@ -1,0 +1,4170 @@
+/**************************************************/
+/*                                                */
+/*  File:        scanner.fl                       */
+/*  Description: The language lexical analyser    */
+/*                                                */
+/*  Author:      Andreas I. Diavastos             */
+/*  Contact:     diavastos@cs.ucy.ac.cy           */
+/*  Last Update: 01-07-2017                       */
+/*                                                */
+/**************************************************/
+
+
+O   [0-7]
+D   [0-9]
+NZ  [1-9]
+L   [a-zA-Z_]
+A   [a-zA-Z_0-9]
+H   [a-fA-F0-9]
+HP  (0[xX])
+E   ([Ee][+-]?{D}+)
+P   ([Pp][+-]?{D}+)
+FS  (f|F|l|L)
+IS  (((u|U)(l|L|ll|LL)?)|((l|L|ll|LL)(u|U)?))
+CP  (u|U|L)
+SP  (u8|u|U|L)
+ES  (\\(['"\?\\abfnrtv]|[0-7]{1,3}|x[a-fA-F0-9]+))
+WS  [ \t\v\f]
+
+
+%{
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include "definitions.h"
+#include "switches.tab.h" 
+
+
+int  inWhichDataList 		= 0;
+int  bracketCounter 		= 0;
+int  pCounter				= 0;
+int  globalDeclarationCounter = -1;
+int  includesDeclarationCounter = 0;
+
+char variableType[SIZE];
+char globalDeclarationString[SIZE][SIZE];
+char includesDeclaration[SIZE][SIZE];
+
+bool bracketsEnabled 		= FALSE;
+bool inPragmaLine 			= FALSE;
+bool inPragmaFor 			= FALSE;
+bool inMainFunction 		= FALSE;
+bool inForLine		 		= FALSE;
+bool inGlobalDeclaration	= FALSE;
+
+
+bracket* 	brackets;
+extern SG*	Graph;
+
+extern int 	line;
+extern int 	pass;
+extern bool firstPass;
+extern bool inParallelFor;
+extern bool inReduction;
+extern char **inputFiles;
+extern int 	currentFile;
+extern int  currentFunction;
+extern int  currentTask;
+extern int	currentFor;
+extern char **stringFor;
+
+
+extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
+extern FILE *outp;
+
+/* Function Prototypes */
+extern void yyerror(const char *);
+static void skipComments(void);
+static int check_type(void);
+
+
+%}
+
+
+%%
+
+	/* My Token Definitions */
+
+"__sw_global__ "	{
+						if(firstPass)
+						{
+							inGlobalDeclaration = TRUE;
+							globalDeclarationCounter++;
+						}
+					}
+
+
+    /* OpenMP 4.5 Token Definiton */
+
+
+  /***  Token: #pragma  ***/
+"#pragma"     {
+				inPragmaLine = TRUE; 
+				return PRAGMA; 
+			  }
+
+ /***  Token: omp  ***/
+"omp"		  {
+                 if(inPragmaLine)
+                 {
+					return OMP; 
+				 }
+                 else
+                 {					 
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+              }
+
+ /***  Token: parallel  ***/
+"parallel"    {
+                 if(inPragmaLine)
+                 {
+					return PARALLEL; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }					
+              }
+
+ /***  Token: for  ***/
+"for"        {
+                 if(inPragmaLine)
+                 {
+					 inPragmaFor = TRUE;
+					 return FOR; 
+				 }
+                 else
+                 {
+					if(inPragmaFor)
+					{
+						inForLine = TRUE;
+						inPragmaFor = FALSE;
+					}
+					 
+					if(inForLine)
+					{
+						currentFor++;
+						return FOR;
+					}
+					 
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+            
+ /***  Token: sections  ***/
+"sections"	{
+                 if(inPragmaLine)
+                 {
+					return SECTIONS;
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+ 		
+ /***  Token: section  ***/
+"section"	{
+                 if(inPragmaLine)
+                 {
+					return SECTION; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+            }
+            
+ /***  Token: simd  ***/
+"simd"	    {
+                 if(inPragmaLine)
+                 {
+					return SIMD; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}            
+            
+ /***  Token: task  ***/
+"task"	    {
+                 if(inPragmaLine)
+                 {
+					return TASK; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}            
+            
+ /***  Token: single  ***/
+"single"	{
+                 if(inPragmaLine)
+                 {
+					return SINGLE; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: target  ***/
+"target"	{
+                 if(inPragmaLine)
+                 {
+					return TARGET; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: atomic  ***/
+"atomic"	{
+                 if(inPragmaLine)
+                 {
+					return ATOMIC; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: master  ***/
+"master"	{
+                 if(inPragmaLine)
+                 {
+					return MASTER; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+            
+ /***  Token: critical  ***/
+"critical"  {
+                 if(inPragmaLine)
+                 {
+					return CRITICAL; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: barrier  ***/
+"barrier"	{
+                 if(inPragmaLine)
+                 {
+					return BARRIER; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: num_threads  ***/
+"num_threads" {
+                 if(inPragmaLine)
+                 {
+					return NUM_THREADS; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: default  ***/
+"default"   {
+                 if(inPragmaLine)
+                 {
+					return DEFAULT; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: private  ***/
+"private"   {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_PRIVATE;
+					return PRIVATE; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}
+
+ /***  Token: firstprivate  ***/
+"firstprivate" {
+                   if(inPragmaLine)
+                   {
+					   inWhichDataList = IN_FIRST_PRIVATE;
+					  return FIRSTPRIVATE; 
+				   }
+                   else
+                   {
+					  if(!firstPass)
+					  {
+					      WRITE("%s", yytext);
+					  }
+				   }
+			   }
+
+ /***  Token: shared  ***/
+"shared"     {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_SHARED;
+					return SHARED; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+            
+ /***  Token: none  ***/
+"none"      {
+                 if(inPragmaLine)
+                 {
+					return NONE; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+            }
+
+ /***  Token: copyin  ***/
+"copyin"     {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_COPY_IN;
+					return COPYIN; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Token: reduction  ***/
+"reduction"    {
+                 if(inPragmaLine)
+                 {
+					inReduction = TRUE;
+					inWhichDataList = IN_REDUCTION;
+					return REDUCTION; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			   }
+            
+ /***  Token: nowait  ***/
+"nowait"    {
+                 if(inPragmaLine)
+                 {
+					return NOWAIT; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}            
+            
+ /***  Token: depend  ***/
+"depend"     {
+                 if(inPragmaLine)
+                 {
+					return DEPEND; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+            
+ /***  Token: lastprivate  ***/
+"lastprivate" {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_LAST_PRIVATE;
+					return LASTPRIVATE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }            
+            
+ /***  Token: copyprivate  ***/
+"copyprivate"    {
+	                 if(inPragmaLine)
+					 {
+						inWhichDataList = IN_COPY_PRIVATE;
+						return COPYPRIVATE; 
+	                 }
+					 else
+	                 {
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+					 }
+                 }
+            
+ /***  Token: linear  ***/
+"linear"     {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_LINEAR;
+					return LINEAR; 
+				 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+            
+ /***  Token: collapse  ***/
+"collapse"    {
+                 if(inPragmaLine)
+                 {
+					return COLLAPSE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+              }
+            
+ /***  Token: if  ***/
+"if"         {
+                 if(inPragmaLine)
+                 {
+					return IF; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}            
+            
+ /***  Token: final  ***/
+"final"      {
+                 if(inPragmaLine)
+                 {
+					return FINAL; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }            
+            
+ /***  Token: untied  ***/
+"untied"    {
+                 if(inPragmaLine)
+                 {
+					return UNTIED; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			}            
+            
+ /***  Token: mergeable  ***/
+"mergeable"    {
+                 if(inPragmaLine)
+                 {
+					return MERGEABLE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+               }            
+            
+ /***  Token: priority  ***/
+"priority"    {
+                 if(inPragmaLine)
+                 {
+					return PRIORITY; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }            
+            
+ /***  Token: schedule  ***/
+"schedule"    {
+                 if(inPragmaLine)
+                 {
+					return SCHEDULE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+            
+ /***  Token: ordered  ***/
+"ordered"    {
+                 if(inPragmaLine)
+                 {
+					return ORDERED; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+            
+ /***  Token: grainsize  ***/
+"grainsize"    {
+                 if(inPragmaLine)
+                 {
+					return GRAINSIZE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+  			   }
+            
+ /***  Token: num_tasks  ***/
+"num_tasks"    {
+                 if(inPragmaLine)
+                 {
+					return NUM_TASKS; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			   }            
+            
+ /***  Token: nogroup  ***/
+"nogroup"    {
+                 if(inPragmaLine)
+                 {
+					return NOGROUP; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Token: aligned  ***/
+"aligned"    {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_ALIGNED;
+					return ALIGNED; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Token: safelen  ***/
+"safelen"    {
+                 if(inPragmaLine)
+                 {
+					return SAFELEN; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Token: declare  ***/
+"declare"    {
+                 if(inPragmaLine)
+                 {
+					return DECLARE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Token: simdlen  ***/
+"simdlen"    {
+                 if(inPragmaLine)
+                 {
+					return SIMDLEN; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Token: uniform  ***/
+"uniform"    {
+                 if(inPragmaLine)
+                 {
+					return UNIFORM; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+             }
+
+ /***  Token: inbranch  ***/
+"inbranch"    {
+                 if(inPragmaLine)
+                 {
+					return INBRANCH; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: notinbranch  ***/
+"notinbranch"    {
+					 if(inPragmaLine)
+                 {
+						return NOTINBRANCH; 
+					 }
+                 else
+					 {
+						if(!firstPass)
+						{
+						WRITE("%s", yytext);
+					}
+					 }
+			     }
+
+ /***  Token: taskloop  ***/
+"taskloop"    {
+                 if(inPragmaLine)
+                 {
+                    inPragmaFor = TRUE;
+                    return TASKLOOP; 
+                 }
+                 else
+                 {
+					if(inPragmaFor)
+					{
+						inForLine = TRUE;
+						inPragmaFor = FALSE;
+					}
+					 
+					if(inForLine)
+					{
+						currentFor++;
+						return FOR;
+					}
+					 
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: update  ***/
+"update"      {
+                 if(inPragmaLine)
+                 {
+					return UPDATE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+              }
+
+ /***  Token: distribute  ***/
+"distribute"    {
+	                 if(inPragmaLine)
+					 {
+						return DISTRIBUTE; 
+	                 }
+					 else
+	                 {
+						if(!firstPass)
+						{
+						WRITE("%s", yytext);
+					}
+					 }
+			    }
+
+ /***  Token: device  ***/
+"device"      {
+                 if(inPragmaLine)
+                 {
+					return DEVICE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: to  ***/
+"to"          {
+                 if(inPragmaLine)
+                 {
+					return TO; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: from  ***/
+"from"        {
+                 if(inPragmaLine)
+                 {
+					return FROM; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: taskyield  ***/
+"taskyield"    {
+                 if(inPragmaLine)
+                 {
+					return TASKYIELD; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			   }
+
+ /***  Token: data  ***/
+"data"        {
+                 if(inPragmaLine)
+                 {
+					return DATA; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: enter  ***/
+"enter"       {
+                 if(inPragmaLine)
+                 {
+					return ENTER; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: enter  ***/
+"exit"       {
+                 if(inPragmaLine)
+                 {
+					return EXIT; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: map  ***/
+"map"         {
+                 if(inPragmaLine)
+                 {
+					return MAP; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: is_device_ptr  ***/
+"is_device_ptr"    {
+		                 if(inPragmaLine)
+						 {
+							inWhichDataList = IN_IS_DEVICE_PTR;
+							return IS_DEVICE_PTR; 
+		                 }
+						else
+		                 {
+							if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+						 }
+                   }
+
+ /***  Token: defaultmap  ***/
+"defaultmap"    {
+	                 if(inPragmaLine)
+                 {
+						return DEFAULTMAP; 
+	                 }
+                 else
+	                 {
+						if(!firstPass)
+						{
+						WRITE("%s", yytext);
+					}
+					 }
+			    }
+
+ /***  Token: num_teams  ***/
+"num_teams"    {
+	                 if(inPragmaLine)
+                 {
+						return NUM_TEAMS; 
+	                 }
+                 else
+	                 {
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+					 }
+			   }
+
+ /***  Token: thread_limit  ***/
+"thread_limit"    {
+		                 if(inPragmaLine)
+                 {
+							return THREAD_LIMIT; 
+		                 }
+                 else
+		                 {
+							if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+						 }
+                  }
+
+ /***  Token: dist_schedule  ***/
+"dist_schedule"    {
+		                 if(inPragmaLine)
+                 {
+							return DIST_SCHEDULE; 
+		                 }
+                 else
+		                 {
+							if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+						 }
+                   }
+
+ /***  Token: teams  ***/
+"teams"       {
+                 if(inPragmaLine)
+                 {
+					return TEAMS; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: taskwait  ***/
+"taskwait"    {
+                 if(inPragmaLine)
+                 {
+					return TASKWAIT; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+            
+ /***  Token: taskgroup  ***/
+"taskgroup"    {
+	                 if(inPragmaLine)
+                 {
+						return TASKGROUP; 
+	                 }
+                 else
+	                 {
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+					 }
+			   }            
+            
+ /***  Token: read  ***/
+"read"        {
+                 if(inPragmaLine)
+                 {
+					return READ; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }            
+            
+ /***  Token: write  ***/
+"write"       {
+                 if(inPragmaLine)
+                 {
+					return WRITE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }                   
+            
+ /***  Token: capture  ***/
+"capture"     {
+                 if(inPragmaLine)
+                 {
+					return CAPTURE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: flush  ***/
+"flush"       {
+                 if(inPragmaLine)
+                 {
+					inWhichDataList = IN_FLUSH;
+					return FLUSH; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }            
+            
+ /***  Token: threads  ***/
+"threads"    {
+                 if(inPragmaLine)
+                 {
+					return THREADS; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }            
+
+ /***  Token: cancel  ***/
+"cancel"      {
+                 if(inPragmaLine)
+                 {
+					return CANCEL; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }            
+            
+ /***  Token: cancellation  ***/
+"cancellation"    {
+		                 if(inPragmaLine)
+						 {
+							return CANCELLATION; 
+		                 }
+						 else
+		                 {
+							if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+						 }
+                  }                        
+
+ /***  Token: point  ***/
+"point"       {
+                 if(inPragmaLine)
+                 {
+					return POINT; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: threadprivate  ***/
+"threadprivate"    {
+		                 if(inPragmaLine)
+						 {
+							inWhichDataList = IN_THREAD_PRIVATE;
+							return THREADPRIVATE; 
+		                 }
+						 else
+		                 {
+							if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+						 }
+                   }
+
+ /***  Token: in  ***/
+"in"          {
+                 if(inPragmaLine)
+                 {
+					return IN; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: out  ***/
+"out"        {
+                 if(inPragmaLine)
+                 {
+					return OUT; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: inout  ***/
+"inout"      {
+                 if(inPragmaLine)
+                 {
+					return INOUT; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+            
+ /***  Scheduling Token: GUIDED  ***/
+"guided"     {
+                 if(inPragmaLine)
+                 {
+					return GUIDED; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+
+ /***  Scheduling Token: DYNAMIC  ***/
+"dynamic"     {
+                 if(inPragmaLine)
+                 {
+					return DYNAMIC; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Scheduling Token: STATIC  ***/
+"static"     {
+                 if(inPragmaLine)
+                 {
+					return STATIC; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+			 
+ /***  Scheduling Token: CROSS  ***/
+"cross"     {
+                 if(inPragmaLine)
+                 {
+					return CROSS; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			 }
+            
+ /***  Scheduling Token: RUNTIME  ***/
+"runtime"     {
+                 if(inPragmaLine)
+                 {
+					return RUNTIME; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  } 
+			  
+ /***  Token: proc_bind  ***/
+"proc_bind"   {
+                 if(inPragmaLine)
+                 {
+					return PROC_BIND; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  } 
+
+ /***  Token: close  ***/
+"close"       {
+                 if(inPragmaLine)
+                 {
+					return CLOSE; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: spread  ***/
+"spread"      {
+                 if(inPragmaLine)
+                 {
+					return SPREAD; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: max  ***/
+"max"         {
+                 if(inPragmaLine)
+                 {
+					return MAX; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+
+ /***  Token: min  ***/
+"min"         {
+                 if(inPragmaLine)
+                 {
+					return MIN; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+			  
+ /***  Token: seq_cst  ***/
+"seq_cst"     {
+                 if(inPragmaLine)
+                 {
+					return SEQ_CST; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }			  
+
+ /***  Token: alloc  ***/
+"alloc"       {
+                 if(inPragmaLine)
+                 {
+					return ALLOC; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }
+			  
+ /***  Token: tofrom  ***/
+"tofrom"      {
+                 if(inPragmaLine)
+                 {
+					return TOFROM; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }			  
+
+ /***  Token: use_device_ptr  ***/
+"use_device_ptr"      {
+		                 if(inPragmaLine)
+						 {
+							inWhichDataList = IN_USE_DEVICE_PTR;
+							return USE_DEVICE_PTR; 
+		                 }
+						 else
+		                 {
+							if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+						 }
+					  }			
+			  
+ /***  Token: scalar  ***/
+"scalar"      {
+                 if(inPragmaLine)
+                 {
+					return SCALAR; 
+                 }
+                 else
+                 {
+					if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+				 }
+			  }		
+			  
+		  			 
+
+    /* ANSI C Language Tokens -- 2011 ISO C Standard Compatible */
+
+"/*"([^*]|\*+[^*/])*\*+"/"	    {
+			                        int cv = 0;
+			                        while("%s", yytext[cv] != '\0')
+			                        {
+			                            if("%s", yytext[cv] == '\n')
+			                                line++;
+			                            cv++;
+			                        }
+			                        if(!firstPass)
+									{
+										WRITE("%s", yytext);
+									}
+			                    }
+
+"//"[^\n]*"\n"	{
+                        line++;
+                        if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+                    }
+
+
+ /***  Token: auto  ***/
+"auto"     {
+                 if(inPragmaLine)
+                 {
+					return AUTO; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: char  ***/
+"char"     {
+                 if(inPragmaLine)
+                 {
+					return CHAR; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "char");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: const  ***/
+"const"     {
+                 if(inPragmaLine)
+                 {
+					return CONST; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: double  ***/
+"double"    {
+                 if(inPragmaLine)
+                 {
+					return DOUBLE; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "double");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: float  ***/
+"float"    {
+                 if(inPragmaLine)
+                 {
+					return FLOAT; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "float");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+		   }
+            
+ /***  Token: int  ***/
+"int"       {
+                 if(inPragmaLine)
+                 {
+					return INT; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "int");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+		
+ /***  Token: bool  ***/
+"bool"       {
+				 if(inPragmaLine)
+                 {
+					return BOOL; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "bool");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: long  ***/
+"long"      {
+                 if(inPragmaLine)
+                 {
+					return LONG; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "long");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: short  ***/
+"short"     {
+                 if(inPragmaLine)
+                 {
+					return SHORT; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						// This is for recognizing the types of the variables in the SG lists
+						bzero(variableType, sizeof(variableType));
+						strcpy(variableType, "short");
+						
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: signed  ***/
+"signed"     {
+                 if(inPragmaLine)
+                 {
+					return SIGNED; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			 }
+            
+ /***  Token: sizeof  ***/
+"sizeof"     {
+                 if(inPragmaLine)
+                 {
+					return SIZEOF; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			 }
+            
+ /***  Token: struct  ***/
+"struct"     {
+                 if(inPragmaLine)
+                 {
+					return STRUCT; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			 }
+            
+ /***  Token: union  ***/
+"union"     {
+                 if(inPragmaLine)
+                 {
+					return UNION; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: _Bool  ***/
+"_Bool"     {
+                 if(inPragmaLine)
+                 {
+					return _BOOL; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: unsigned  ***/
+"unsigned"     {
+                 if(inPragmaLine)
+                 {
+					return UNSIGNED; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			   }
+            
+ /***  Token: _Complex  ***/
+"_Complex"     {
+                 if(inPragmaLine)
+                 {
+					return _COMPLEX; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			   }
+            
+ /***  Token: _Imaginary  ***/
+"_Imaginary"     {
+	                 if(inPragmaLine)
+					 {
+						return _IMAGINARY; 
+	                 }
+					 else
+	                 {
+						if(inForLine)
+						{
+							if(firstPass)
+							{
+								strcat(stringFor[currentFor], yytext);
+							}
+						} 
+						else if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+					 }
+			     }
+            
+ /***  Token: void  ***/
+"void"     {
+                 if(inPragmaLine)
+                 {
+					return VOID; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			}
+            
+ /***  Token: restrict  ***/
+"restrict"     {
+                 if(inPragmaLine)
+                 {
+					return RESTRICT; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			   }
+            
+ /***  Token: volatile  ***/
+"volatile"     {
+                 if(inPragmaLine)
+                 {
+					return VOLATILE; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			   }
+            
+ /***  Token: _Alignof  ***/
+"_Alignof"     {
+                 if(inPragmaLine)
+                 {
+					return _ALIGNOF; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			   }
+            
+ /***  Token: _Atomic  ***/
+"_Atomic"     {
+                 if(inPragmaLine)
+                 {
+					return _ATOMIC; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			  }
+            
+ /***  Token: _Generic  ***/
+"_Generic"     {
+                 if(inPragmaLine)
+                 {
+					return _GENERIC; 
+                 }
+                 else
+                 {
+					if(inForLine)
+					{
+						if(firstPass)
+						{
+							strcat(stringFor[currentFor], yytext);
+						}
+					} 
+					else if(!firstPass)
+					{
+						WRITE("%s", yytext);
+					}
+					else if(firstPass)
+					{
+						if(inGlobalDeclaration)
+						{
+							strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+						}
+					}
+				 }
+			   }
+                       
+ /***  Token: _Static_assert  ***/
+"_Static_assert"     {
+		                 if(inPragmaLine)
+						 {
+							return _STATIC_ASSERT; 
+		                 }
+						 else
+		                 {
+							if(inForLine)
+							{
+								if(firstPass)
+								{
+									strcat(stringFor[currentFor], yytext);
+								}
+							} 
+							else if(!firstPass)
+							{
+								WRITE("%s", yytext);
+							}
+							else if(firstPass)
+							{
+								if(inGlobalDeclaration)
+								{
+									strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+								}
+							}
+						 }
+                     }
+          
+ /***  Token: __func__  ***/
+"__func__"     {
+	                 if(inPragmaLine)
+					 {
+						return FUNC_NAME; 
+	                 }
+					 else
+	                 {
+						if(inForLine)
+						{
+							if(firstPass)
+							{
+								strcat(stringFor[currentFor], yytext);
+							}
+						} 
+						else if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							if(inGlobalDeclaration)
+							{
+								strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+							}
+						}
+					 }
+                }
+
+
+ /***  Token: __global__  ***/
+"__global__"     {
+	                 if(inPragmaLine)
+					 {
+						return GLOBAL; 
+	                 }
+					 else
+	                 {
+						if(inForLine)
+						{
+							if(firstPass)
+							{
+								strcat(stringFor[currentFor], yytext);
+							}
+						} 
+						else if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							if(inGlobalDeclaration)
+							{
+								strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+							}
+						}
+					 }
+                }
+                
+"return" 			{
+						line++; 
+						if(!firstPass)
+						{
+							if(inMainFunction)
+							{
+								inMainFunction = FALSE;
+								WRITE("%s", "\n\n   /* Parallel sections is finished -- Destroy threadpool */\n");
+								WRITE("%s", "   __threadpool_initialize(-1);\n");
+								WRITE("%s", "   __threadpool_destroy();\n");
+								WRITE("%s", "   pthread_exit(NULL);\n\n");
+								WRITE("%s", yytext); 
+							}
+							else
+							{
+								WRITE("%s", yytext);
+							}
+						}						
+					}
+
+
+{L}{A}*					        { 
+					                 if(inPragmaLine)
+					                 {
+										yylval = (int)strdup(yytext);
+										return IDENTIFIER;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											// Search if its a variable in the list and add its type
+											addTypeOfVariable(&Graph, variableType, yytext);
+											
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }										
+                                }
+
+{HP}{H}+{IS}?				    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atoi(yytext);
+										return I_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{NZ}{D}*{IS}?				    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atoi(yytext);
+										return I_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+								}
+								
+"0"{O}*{IS}?				    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atoi(yytext);
+										return I_CONSTANT;
+									 }
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{CP}?"'"([^'\\\n]|{ES})+"'"		{ 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atoi(yytext);
+										return I_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+
+{D}+{E}{FS}?				    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atof(yytext);
+										return F_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{D}*"."{D}+{E}?{FS}?			{ 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atof(yytext);
+										return F_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{D}+"."{E}?{FS}?			    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atof(yytext);
+										return F_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{HP}{H}+{P}{FS}?			    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atof(yytext);
+										return F_CONSTANT;
+									 }
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{HP}{H}*"."{H}+{P}{FS}?			{ 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atof(yytext);
+										return F_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+                                
+{HP}{H}+"."{P}{FS}?			    { 
+                                    if(inPragmaLine)
+					                 {
+										yylval = atof(yytext);
+										return F_CONSTANT;
+									}
+					                 else
+					                 {
+										if(inForLine)
+										{
+											if(firstPass)
+											{
+												strcat(stringFor[currentFor], yytext);
+											}
+										} 
+										else if(!firstPass)
+										{
+											WRITE("%s", yytext);
+										}
+										else if(firstPass)
+										{
+											if(inGlobalDeclaration)
+											{
+												strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+											}
+										}
+									 }
+                                }
+
+({SP}?\"([^"\\\n]|{ES})*\"{WS}*)+	{ 
+											if(inPragmaLine)
+							                 {
+												yylval = (int)strdup(yytext);
+												return STRING_LITERAL;
+											 }
+							                 else
+							                 {
+												if(inForLine)
+												{
+													if(firstPass)
+													{
+														strcat(stringFor[currentFor], yytext);
+													}
+												} 
+												else if(!firstPass)
+												{
+													WRITE("%s", yytext);
+												}
+												else if(firstPass)
+												{
+													if(inGlobalDeclaration)
+													{
+														strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+													}
+												}
+											 }												
+                                    }
+                
+               
+    /* ANSI C Language Operand Tokens -- 2011 ISO C Standard Compatible */ 
+                
+
+">>="					{ 
+			                 if(inPragmaLine)
+							 {
+								return RIGHT_ASSIGN; 
+			                 }
+							 else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"<<="					{ 
+                            if(inPragmaLine)
+							{
+								return LEFT_ASSIGN;
+			                 }
+							 else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"+="					{ 
+                            if(inPragmaLine)
+							{
+								return ADD_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"-="					{ 
+                            if(inPragmaLine)
+							{
+								return SUB_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"*="					{ 
+                            if(inPragmaLine)
+							{
+								return MUL_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"/="					{ 
+                            if(inPragmaLine)
+							{
+								return DIV_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"%="					{ 
+                            if(inPragmaLine)
+							{
+								return MOD_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"&="					{ 
+                            if(inPragmaLine)
+							{
+								return AND_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"^="					{ 
+                            if(inPragmaLine)
+							{
+								return XOR_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"|="					{ 
+                            if(inPragmaLine)
+							{
+								return OR_ASSIGN;
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+">>"					{ 
+                            if(inPragmaLine)
+							{
+								return RIGHT_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"<<"					{ 
+                            if(inPragmaLine)
+							{
+								return LEFT_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"++"					{ 
+                            if(inPragmaLine)
+							{
+								return INC_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"--"					{ 
+                            if(inPragmaLine)
+							{
+								return DEC_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"->"					{ 
+                            if(inPragmaLine)
+							{
+								return PTR_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"&&"					{ 
+                            if(inPragmaLine)
+							{
+								return AND_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }  
+                        }
+                        
+"||"					{ 
+                            if(inPragmaLine)
+							{
+								return OR_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"<="					{ 
+                            if(inPragmaLine)
+							{
+								return LE_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+">="					{ 
+                            if(inPragmaLine)
+							{
+								return GE_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"=="					{ 
+                            if(inPragmaLine)
+							{
+								return EQ_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"!="					{ 
+                            if(inPragmaLine)
+							{
+								return NE_OPERAND; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+";"					    { 
+                            if(inPragmaLine)
+							{
+								return ';'; 
+			                }
+							else
+			                {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									// Empty variableType
+									bzero(variableType, sizeof(variableType));
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"{"				        {
+	
+							bracketCounter++;
+	
+                            if(inPragmaLine)
+							{
+								return '{'; 
+			                }
+							else
+			                {
+								if(!firstPass)
+								{
+									if(bracketsEnabled)
+									{
+										addBracketsCounter(&brackets, bracketCounter);
+										__OUTP_IS_NOW_THREADS_FILE
+										bracketsEnabled = FALSE;
+									}
+									else
+									{
+										WRITE("%s", yytext);
+									}
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							} 
+                        }
+                        
+"}"				        { 
+	
+                            if(inPragmaLine)
+							{
+								return '}'; 
+			                }
+							else
+			                 {								 
+								if(!firstPass)
+								{
+									if(!brackets)
+									{
+										WRITE("%s", yytext);
+									}
+									else
+									{
+										if(checkBracketCounter(&brackets, bracketCounter))
+										{
+											removeBracketsCounter(&brackets);
+											if(!brackets)
+											{
+												if(inParallelFor)
+												{
+													printInThreadsFile_TurnSwitchesOn(&Graph->parallel_functions, currentFunction-1, currentTask-1);
+													WRITE("%s", "\n    }\n");				// End of a task
+                                                    WRITE("%s", "       if(!__sw_tasksCounter) break;\n");
+													inParallelFor = FALSE;
+												}
+												
+												
+												// Check Switches of each kernel and if all switches are ON, then break the loop
+												// NEW UPDATE DOESNT NEED THIS FUNCTION -- CONTROL GOES IN THE WHILE LOOP WITH while()
+												//printInThreadsFile_BreakLoopWhenFinished(&Graph->parallel_functions, currentFunction-1);
+												
+												WRITE("%s", "\n\n    }while(__sw_tasksCounter);\n");
+												WRITE("%s", "\n}\n\n");								// End of a parallel function
+												__OUTP_IS_NOW_MAIN_FILE
+											}
+											else
+											{
+												printInThreadsFile_TurnSwitchesOn(&Graph->parallel_functions, currentFunction-1, currentTask-1);
+												WRITE("%s", "\n    }\n");				// End of a task
+                                                WRITE("%s", "       if(!__sw_tasksCounter) break;\n\n");
+											}
+										}
+										else
+										{
+											WRITE("%s", yytext);
+										}										
+									}
+									bracketCounter--;
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							}
+                        }
+                        
+","					    { 
+                            if(inPragmaLine)
+							{
+								return ','; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+":"					    { 
+                            if(inPragmaLine)
+							{
+								return ':'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"="					    { 
+                            if(inPragmaLine)
+							{
+								return '='; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"("					    { 
+                            if(inPragmaLine)
+							{
+								return '('; 
+			                }
+							else
+			                {
+								if(inForLine)
+								{
+									pCounter++;
+									
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+")"					    { 
+                            if(inPragmaLine)
+							{
+								return ')'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									pCounter--;
+									
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+									
+									if(pCounter == 0)
+									{
+										if(!firstPass)
+											printInThreadsFile_ForStatement();
+										inForLine = FALSE;
+									}
+									
+									
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"["     				{ 
+                            if(inPragmaLine)
+							{
+								return '['; 
+			                 }
+							else
+							{
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"]"     				{ 
+                            if(inPragmaLine)
+							{
+								return ']'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"."					    { 
+                            if(inPragmaLine)
+							{
+								return '.'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"&"					    { 
+                            if(inPragmaLine)
+							{
+								return '&'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"!"					    { 
+                            if(inPragmaLine)
+							{
+								return '!'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                                
+                        }
+                        
+"~"					    { 
+                            if(inPragmaLine)
+							{
+								return '~'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 }
+                        }
+                        
+"-"					    { 
+                            if(inPragmaLine)
+							{
+								return '-'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"+"					    { 
+                            if(inPragmaLine)
+							{
+								return '+'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"*"					    { 
+                            if(inPragmaLine)
+							{
+								return '*'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"/"					    { 
+                            if(inPragmaLine)
+							{
+								return '/'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"%"					    { 
+                            if(inPragmaLine)
+							{
+								return '%'; 
+			                 }
+			                 else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"<"					    { 
+                            if(inPragmaLine)
+							{
+								return '<'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+">"					    { 
+                            if(inPragmaLine)
+							{
+								return '>'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"^"					    { 
+                            if(inPragmaLine)
+							{
+								return '^'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"|"					    { 
+                            if(inPragmaLine)
+							{
+								return '|'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }
+                        
+"?"					    { 
+                            if(inPragmaLine)
+							{
+								return '?'; 
+			                 }
+							else
+			                 {
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							 } 
+                        }                
+                
+
+"\n"                    { 
+                            if(inPragmaLine)
+                            {
+                                inPragmaLine = FALSE; 
+                                return ENDLN;
+                                /* If in pragma line, increment the lines in bison file
+                                 * to have correct line number for errors
+                                 */
+                            }
+                            else
+                            {
+								line++;
+								if(!firstPass && !inPragmaFor)
+								{
+									WRITE("%s", yytext);
+								}
+								
+								if(inGlobalDeclaration && firstPass)
+								{
+									strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									inGlobalDeclaration = FALSE;
+								}
+								
+                            } 
+                        }
+ 
+ /* To read all tokens that start with # but are not pragmas */
+
+"#include".*"\n"	{
+						line++; 
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							bzero(includesDeclaration[includesDeclarationCounter], sizeof(includesDeclaration[includesDeclarationCounter]));
+							strcat(includesDeclaration[includesDeclarationCounter++], yytext);
+						}
+					}
+					
+"#define".*"\n"		{
+						line++; 
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							bzero(includesDeclaration[includesDeclarationCounter], sizeof(includesDeclaration[includesDeclarationCounter]));
+							strcat(includesDeclaration[includesDeclarationCounter++], yytext);
+						}
+					}
+					
+"#undef".*"\n"		{
+						line++; 
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							if(inGlobalDeclaration)
+							{
+								strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+								inGlobalDeclaration = FALSE;
+							}
+						}
+					}
+					
+"#ifdef".*"\n"		{
+						line++; 
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							if(inGlobalDeclaration)
+							{
+								strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+								inGlobalDeclaration = FALSE;
+							}
+						}
+					}
+					
+"#endif".*"\n"		{
+						line++; 
+						if(!firstPass)
+						{
+							WRITE("%s", yytext);
+						}
+						else if(firstPass)
+						{
+							if(inGlobalDeclaration)
+							{
+								strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+								inGlobalDeclaration = FALSE;
+							}
+						}
+					}             					
+ 
+(int|void)[ \t\n\r]*main[ \t\n\r]*"("[^")"]*")"[ \n\t\r]* {
+	
+		
+						line++; 
+						if(!firstPass)
+						{
+							inMainFunction = TRUE;
+							WRITE("%s", yytext); 
+						}
+						
+					}
+ 
+                        
+{WS}+					{ 
+							if(!inPragmaLine)
+							{
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							}							
+						}
+						
+.					    { 
+							if(!inPragmaLine)
+							{
+								if(inForLine)
+								{
+									if(firstPass)
+									{
+										strcat(stringFor[currentFor], yytext);
+									}
+								} 
+								else if(!firstPass)
+								{
+									WRITE("%s", yytext);
+								}
+								else if(firstPass)
+								{
+									if(inGlobalDeclaration)
+									{
+										strcat(globalDeclarationString[globalDeclarationCounter], yytext);
+									}
+								}
+							}
+						}
+
+
+  
+ 
+ 
+
+ /*****************************************************************************/                        
+
+
+%%
