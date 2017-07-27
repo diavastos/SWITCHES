@@ -43,7 +43,7 @@ extern int  OSthread;
 
 void printVersion(){
     
-    printf("\n SWITCHES Translator Version 1.5\n");
+    printf("\n SWITCHES Translator Version 1.5 (26-07-2017)\n");
     printf(" Copyright (c) 2017 Andreas Diavastos\n");
     printf(" Download: https://github.com/diavastos/SWITCHES\n");
     printf(" Contact : diavastos@cs.ucy.ac.cy\n\n");

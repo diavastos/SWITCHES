@@ -15,7 +15,7 @@ __Installation__
 
 $ cd Translator  
 $ make  
-$ export PATH=$PATH:/path/to/produced/binary  
+$ export PATH=$PATH:/full/path/to/current/direcotry  
  
 
 __Usage__
