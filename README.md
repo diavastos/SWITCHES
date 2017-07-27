@@ -15,7 +15,7 @@ __Installation__
 
 $ cd Translator  
 $ make  
-$ export PATH=$PATH:/full/path/to/current/direcotry  
+$ export PATH=$PATH:/full/path/to/current/directory  
  
 
 __Usage__
