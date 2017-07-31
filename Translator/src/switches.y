@@ -47,6 +47,8 @@
     bool inReduction	= FALSE;
 
     bool transactions 	= FALSE;
+    bool tao         	= FALSE;
+    bool taosw       	= FALSE;
     
     
 	FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;

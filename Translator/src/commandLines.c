@@ -29,6 +29,8 @@ extern int line;
 extern int pass;
 extern bool firstPass;
 extern bool transactions;
+extern bool tao;
+extern bool taosw;
 extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
 extern FILE *outp;
 extern NSGA *nsga;
@@ -43,7 +45,7 @@ extern int  OSthread;
 
 void printVersion(){
     
-    printf("\n SWITCHES Translator Version 1.5 (26-07-2017)\n");
+    printf("\n SWITCHES Translator Version 1.6 (31-07-2017)\n");
     printf(" Copyright (c) 2017 Andreas Diavastos\n");
     printf(" Download: https://github.com/diavastos/SWITCHES\n");
     printf(" Contact : diavastos@cs.ucy.ac.cy\n\n");
@@ -57,15 +59,15 @@ void printVersion(){
 
 void printHelp(){
     
-    printf(ANSI_COLOR_MAGENTA "\n Usage:" ANSI_COLOR_GREEN "  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-tm] [-p <Option>]\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\n Usage:" ANSI_COLOR_GREEN "  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-p <Option>]\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\n     Example:" ANSI_COLOR_BLUE " ./switches -s phi -i main.c functions.c -t 4 -p screen -a compact\n\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t [-] Required:\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t -------------\n\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t   * -s <System>          :" ANSI_COLOR_CYAN " phi \n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                            amd \n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                            office \n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * -i <InputFiles>      :" ANSI_COLOR_CYAN " Input files that contain SW directives\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * -t <NumberOfThreads> :" ANSI_COLOR_CYAN " Number of threads to use for the execution\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * -i <InputFiles>      :" ANSI_COLOR_BLUE " Input files that contain SW directives\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * -t <NumberOfThreads> :" ANSI_COLOR_BLUE " Number of threads to use for the execution\n" ANSI_COLOR_RESET);
     printf("\n");
     printf(ANSI_COLOR_MAGENTA "\t [-] Scheduling (-sched)/Affinity (-a) Optimizations (Optional):\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t ---------------------------------------------------------------\n\n" ANSI_COLOR_RESET);    
@@ -90,13 +92,19 @@ void printHelp(){
     printf(ANSI_COLOR_BLUE "\t                           Crossover       : FLT (choices: 0.6-1.0, default: 0.6)\n" ANSI_COLOR_RESET);
     printf("\n");
     
+    printf(ANSI_COLOR_MAGENTA "\t   * [-tao]              :" ANSI_COLOR_BLUE " Produce code for the TAO runtime\n" ANSI_COLOR_RESET);
+    printf("\n");
+    
+    printf(ANSI_COLOR_MAGENTA "\t   * [-taosw]            :" ANSI_COLOR_BLUE " Produce code for the TAO+SW runtime\n" ANSI_COLOR_RESET);
+    printf("\n");
+    
     printf(ANSI_COLOR_MAGENTA "\t [-] Optional:\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t -------------\n\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * [-tm]              :" ANSI_COLOR_CYAN " Activate Transactional Memory   (NOT YET IMPLEMENTED)\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * [-p <Option>]      :" ANSI_COLOR_CYAN " Print the Synchronization Graph\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * [-tm]              :" ANSI_COLOR_BLUE " Activate Transactional Memory   (NOT YET IMPLEMENTED)\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * [-p <Option>]      :" ANSI_COLOR_BLUE " Print the Synchronization Graph\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                              Options: screen\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                                       file\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * [-v] | [--version] :" ANSI_COLOR_CYAN " Print the current version of the Translator\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * [-v] | [--version] :" ANSI_COLOR_BLUE " Print the current version of the Translator\n" ANSI_COLOR_RESET);
     printf("\n");
     
     printf("\n");
@@ -123,6 +131,8 @@ void recognizeCommandlineArguments(int argc, char **argv){
     bool nsgaFound = FALSE;
     bool policyFound = FALSE;
     bool dataSchedPolicyFound = FALSE;
+    bool taoFound = FALSE;
+    bool taoswFound = FALSE;
     FILE*   nsgaInputs;
     char    buff[1000];
     int     res;
@@ -237,7 +247,9 @@ void recognizeCommandlineArguments(int argc, char **argv){
                           && strcmp(argv[i], "-p")
                           && strcmp(argv[i], "-a")
                           && strcmp(argv[i], "-nsga")
-                          && strcmp(argv[i], "-sched"))
+                          && strcmp(argv[i], "-sched")
+                          && strcmp(argv[i], "-tao")
+                          && strcmp(argv[i], "-taosw"))
             {
                 inputFiles[j] = malloc(sizeof(char) * strlen(argv[i]));
                 strcpy(inputFiles[j], argv[i]);
@@ -250,11 +262,31 @@ void recognizeCommandlineArguments(int argc, char **argv){
             continue;
         }
         
+        /** If command line argument  is for TAO **/
+        if(!strcmp(argv[i], "-tao") && !taoFound)
+        {   
+            tao      = TRUE;
+            taoFound = TRUE;
+            continue;
+        }
+        
+        /** If command line argument  is for TAO+SW **/
+        if(!strcmp(argv[i], "-taosw") && !taoswFound)
+        {   
+            taosw      = TRUE;
+            taoswFound = TRUE;
+            continue;
+        }
+        
         /** If command line argument  is for Transactional Memory **/
         if(!strcmp(argv[i], "-tm") && !transactionsFound)
         {   
             transactions = TRUE;
             transactionsFound = TRUE;
+            
+            ERROR_COMMANDS("%s not implemented yet!", "TM Version")
+            printHelp();
+            
             continue;
         }
         
