@@ -32,12 +32,14 @@ void recognizeCommandlineArguments(int argc, char **argv);						/* Read & recogn
 /******************************************************************************/
 
 void printInThreadpoolFile(SG** );													/* Print the threadpool creating functions in the [ sw_threadpool.c ] file */
+    void printInThreadpoolFile_SWITCHES(SG** );										    /* Print for SWITCHES model */
 void printInSwFile(SG** );															/* Print declarations and definitions in the [ sw.h ] file */
-void printInThreadsFile_headerSourceCode(SG** );									/* Print the header source code for the threads in the [ sw_threads.c ] file */
 void printInMainFile_ParallelFunctions(parallel_function**, int);					/* Print source code in the main files */
+void printInThreadsFile_headerSourceCode(SG** );									/* Print the header source code for the threads in the [ sw_threads.c ] file */
 void printInThreadsFile_SwitchesDeclaration(SG**);									/* Print switches in threads files */
 void printInThreadsFile_ResetSwitchesFunctions(SG**);								/* Print Reset Switches Functions in [ sw_threads.c ] */
-void printInThreadsFile_JobsThreadsFunction(SG**);									/* Print the Jobs Thread Function in [ sw_threads.c ] */
+void printInThreadsFile_JobsThreadsFunction(SG**);									/* Print the Jobs Thread Function in [ sw_threads.c , depending on what the system used (sw, tao, taosw) */
+void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG**);							/* Print the Jobs Thread Function in [ sw_threads.c ] for SWITCHES*/
 void printInThreadsFile_ParallelFunctionsHeader(parallel_function**, int);			/* Print Parallel Functions Header in [ sw_threads.c ] */
 void printInThreadsFile_TaskSourceCode(parallel_function **, int, int);				/* Print the source code of task in a parallel function in [ sw_threads.c ] */
 void printInThreadsFile_TurnSwitchesOn(parallel_function **, int, int);				/* Print the turn ON switches for each task in [ sw_threads.c ] */

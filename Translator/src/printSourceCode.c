@@ -30,6 +30,8 @@ extern char includesDeclaration[SIZE][SIZE];
 extern int  includesDeclarationCounter;
 extern int currentFor;
 extern bool transactions;
+extern bool tao;
+extern bool taosw;
 extern char	**stringFor;
 extern char **inputFiles;
 extern int totalInputFiles;
@@ -59,8 +61,29 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
 
 /*********************** Print in [ sw_threadpool.c ] file **************************/
 
-
 void printInThreadpoolFile(SG** Graph){
+    
+    if(tao)
+    {
+        // Do nothing...
+        return;
+    }
+    else if(taosw)
+    {
+        // Do nothing...
+        return;
+    }
+    else
+    {
+        printInThreadpoolFile_SWITCHES(Graph);
+    }
+    
+}
+
+
+
+
+void printInThreadpoolFile_SWITCHES(SG** Graph){
 
 	int 				i = 0;
 	SG 					*tempGraph = *Graph;
@@ -1337,6 +1360,11 @@ void printInThreadsFile_ForStatement(){
 
 
 void printInThreadsFile_JobsThreadsFunction(SG** Graph){
+
+
+
+
+void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG** Graph){
 	
 	SG 					*tempGraph = *Graph;
 	parallel_function 	*tempFunction;

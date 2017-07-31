@@ -3126,16 +3126,18 @@ int main(int argc, char *argv[]){
 	    if(firstPass)
 	    {
 			// Open [ sw_threadpool.c ] Output File
-	        bzero(outputFile, sizeof(outputFile));
-	        sprintf(outputFile, "sw_threadpool.c");
-	        outp_sw_threadpool = fopen(outputFile, "w");
-	        if(!outp_sw_threadpool){
-	            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
-	            exit(-1);
-	        }
+            
+            bzero(outputFile, sizeof(outputFile));
+            sprintf(outputFile, "sw_threadpool.c");
+            outp_sw_threadpool = fopen(outputFile, "w");
+            if(!outp_sw_threadpool){
+                ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                exit(-1);
+            }
 	        
-	        // Print source code of [ sw_threadpool.c ]
-	        printInThreadpoolFile(&Graph);
+            // Print source code of [ sw_threadpool.c ]
+            printInThreadpoolFile(&Graph);
+            
 			
 			// Open [ sw.h ] Output File
 			bzero(outputFile, sizeof(outputFile));
