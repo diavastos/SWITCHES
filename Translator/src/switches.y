@@ -2965,7 +2965,7 @@ reduction_identifier:
 
 int main(int argc, char *argv[]){
     
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0, k = 0, dum;
     char outputFile[INPUT_SIZE];
         
     
@@ -3161,11 +3161,9 @@ int main(int argc, char *argv[]){
 	            exit(-1);
 	        }
 	        
-	        printInThreadsFile_headerSourceCode(&Graph);				// Print header source code of [ sw_threads.c ]
-	        printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
-	        printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
-	        printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
-	        printInThreadsFile_JobsThreadsFunction(&Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+            
+	        printInThreadsFile(&Graph);				// Print in the [ sw_threads.c ]
+	        
 		}
 		
 		
@@ -3184,6 +3182,17 @@ int main(int argc, char *argv[]){
 	    currentFunction = 1;
 	    
     }while(pass <= PARSES);
+    
+    if(tao)
+    {
+        dum = system("rm sw_threads.c");
+        dum = system("rm sw.h");
+        dum = system("rm sw_threadpool.c");
+    }
+    else if(taosw)
+    {
+        dum = system("rm sw_threadpool.c");
+    }
     
    
     printSG(&Graph, printSGFlag);

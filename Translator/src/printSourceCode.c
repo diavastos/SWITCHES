@@ -176,8 +176,30 @@ void printInThreadpoolFile_SWITCHES(SG** Graph){
 
 /*********************** Print in [ sw.h ] file ****************************/
 
-
 void printInSwFile(SG** Graph){
+    
+    if(tao)
+    {
+        // Do nothing...
+        return;
+    }
+    else if(taosw)
+    {
+        printInSwFile_TAOSW(Graph);
+    }
+    else
+    {
+        printInSwFile_SWITCHES(Graph);
+    }
+    
+}
+
+
+
+
+/*********************** Print in [ sw.h ] file for SWITCHES ****************************/
+
+void printInSwFile_SWITCHES(SG** Graph){
 	
 	int 				i = 0, j = 0;
 	SG 					*tempGraph = *Graph;
@@ -411,6 +433,272 @@ void printInSwFile(SG** Graph){
 }
 
 
+
+/*********************** Print in [ sw.h ] file for TAOSW ****************************/
+
+void printInSwFile_TAOSW(SG** Graph){
+	
+	int 				i = 0, j = 0;
+	SG 					*tempGraph = *Graph;
+	parallel_function 	*tempFunction;
+	task 				*tempTask;
+    section             *tempSection;
+    kernel              *tempKernel;
+	
+	//Redirect output
+	__OUTP_IS_NOW_SW_FILE
+	
+	/* Print include files */
+	
+	WRITE("%s", "#define _GNU_SOURCE\n");
+	WRITE("%s", "#include <stdio.h>\n");
+	WRITE("%s", "#include <stdlib.h>\n");
+	WRITE("%s", "#include <stdint.h>\n");
+	WRITE("%s", "#include <pthread.h>\n");
+	WRITE("%s", "#include <sched.h>\n");
+	WRITE("%s", "#include <stdbool.h>\n");
+	WRITE("%s", "#include <math.h>\n");
+	WRITE("%s", "#include <time.h>\n");
+	WRITE("%s", "\n\n");
+	
+	
+	/* Print General Defintions */
+	
+	WRITE("%s", "/************************** General Definitions *****************************/\n\n");
+	WRITE("#define __KERNELS  %d\n", kernels);
+	WRITE("%s", "#define __PTHREADS (__KERNELS-1)\n");
+	WRITE("%s", "#define __ON       1\n");
+	WRITE("%s", "#define __OFF      0\n");
+	WRITE("%s", "#define TRUE       1\n");
+	WRITE("%s", "#define FALSE      0\n");
+	WRITE("%s", "\n\n");
+	
+	
+	/* Print Error Printing Codes */
+	
+	WRITE("%s", "/************************** Error Printing Colors *****************************/\n\n");
+	WRITE("%s", "#define ANSI_COLOR_RED     \"\\x1b[31m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_GREEN   \"\\x1b[32m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_YELLOW  \"\\x1b[33m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_BLUE    \"\\x1b[34m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_MAGENTA \"\\x1b[35m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_CYAN    \"\\x1b[36m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_WHITE   \"\\x1B[37m\"\n");
+	WRITE("%s", "#define ANSI_COLOR_RESET   \"\\x1b[0m\"\n");
+	WRITE("%s", "\n");
+	WRITE("%s", "#define ERROR(FormalLiteral, ...)   fprintf(stderr, ANSI_COLOR_RED \"%s:%d: ERROR: \" FormalLiteral ANSI_COLOR_RESET \"\\n\", __FILE__, __LINE__, __VA_ARGS__);\n");
+	WRITE("%s", "\n");
+	WRITE("%s", "\n\n");
+
+
+	/* Print Kernel Declaration */
+	
+	WRITE("%s", "/************************ Declare all the KERNELS here ************************/\n\n");
+	WRITE("%s", "#define __MAIN_KERNEL 0\n");
+	for(i = 1; i < kernels; i++)
+		WRITE("#define __KERNEL_%d    %d\n", i, i);
+		
+	WRITE("%s", "\n\n");
+	
+
+	/* Print Threadpool Function Prototypes */
+	
+	WRITE("%s", "/********************** Threadpool Function Prototypes ************************/\n\n");
+	WRITE("%s", "pthread_t __kernels[__PTHREADS];\n");
+	i = 1;
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			i++;
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("pthread_barrier_t barrier[%d];                   // # of functions + 1 (for the entire thread_jobs)\n\n", i);
+	WRITE("%s", "void __threadpool_initialize(int);\n");
+	WRITE("%s", "void __threadpool_destroy();\n");
+	WRITE("%s", "\n\n");
+	
+
+
+	/* Print Pthreads complex arguments declaration */
+	
+	WRITE("%s", "/******************** Thread Complex Arguments Definition **********************/\n\n");
+	WRITE("%s", "typedef struct __arguments{\n\n");
+	WRITE("%s", "    long   id;\n");
+	WRITE("%s", "    long   function_id;\n\n");
+	WRITE("%s", "}__arguments;\n");
+	WRITE("%s", "\n\n");
+	
+	
+	
+	/* Declare Loop Chunk Sizes */
+	
+	WRITE("%s", "/************************** Declare Loop Chunk Sizes **************************/\n\n");
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			tempTask = tempFunction->tasks;
+			while(tempTask)
+			{
+				if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+				{
+					if(tempTask->chunkSize.localInt)
+					{
+						WRITE("#define __LOOP_%d_CHUNK    %d\n", tempTask->id, tempTask->chunkSize.localInt);
+					}
+					else
+					{
+						WRITE("#define __LOOP_%d_CHUNK    %s\n", tempTask->id, tempTask->chunkSize.localStr);
+					}
+				}
+				tempTask = tempTask->next;			
+			}
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "\n\n");
+	
+	
+	
+	/* Declare Loop Kernel Number */
+	
+	WRITE("%s", "/************************** Declare Loop Kernel Number **************************/\n\n");
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			tempTask = tempFunction->tasks;
+			while(tempTask)
+			{
+				if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+				{
+					WRITE("#define __LOOP_%d_KERNELS    %d\n", tempTask->id, tempTask->number_of_kernels);
+				}
+				tempTask = tempTask->next;			
+			}
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "\n\n");
+	
+	
+	
+	/* Declare Loop Counters */
+	
+	WRITE("%s", "/************************** Declare Loop Counters **************************/\n\n");
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			tempTask = tempFunction->tasks;
+			while(tempTask)
+			{
+				if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+				{
+					WRITE("#define __LOOP_%d_COUNTER    (__LOOP_%d_CHUNK * __LOOP_%d_KERNELS)\n", tempTask->id, tempTask->id, tempTask->id);
+				}
+				tempTask = tempTask->next;			
+			}
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "\n\n");
+	
+	
+	
+	/* Declare Parallel Functions */
+	
+	WRITE("%s", "/************************** Declare Parallel Functions **************************/\n\n");
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			WRITE("#define __FUNCTION_%d    %d\n", tempFunction->id, tempFunction->id);
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "\n\n");
+    	
+	
+
+	/* Print Parallel Functions Prototype */
+
+	WRITE("%s", "/*********************** Functions Prototypes ************************/\n\n");
+	
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			WRITE("void __sw_resetSWitches_%d(int);\n", tempFunction->id);
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "void *thread_jobs(void *);\n");
+	tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+			WRITE("void *parallel_function_%d(void *);\n", tempFunction->id);
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "\n\n");
+
+}
+
+
+
+
+/*********************** Print in [ sw_threads.c ] file ****************************/
+
+void printInThreadsFile(SG** Graph){
+    
+    if(tao)
+    {
+        // Do nothing...
+        return;
+    }
+    else if (taosw)
+    {
+        printInThreadsFile_headerSourceCode(Graph);				// Print header source code of [ sw_threads.c ]
+        printInThreadsFile_SwitchesDeclaration(Graph);				// Print switches in [ sw_threads.c ]
+	    printInThreadsFile_taskCounters(Graph);				    // Print taskCounters in [ sw_threads.c ]
+	    printInThreadsFile_ResetSwitchesFunctions(Graph);			// Print Reset Switches functions in [ sw_threads.c ]
+	    printInThreadsFile_JobsThreadsFunction(Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+    }
+    else
+    {
+        printInThreadsFile_headerSourceCode(Graph);				// Print header source code of [ sw_threads.c ]
+        printInThreadsFile_SwitchesDeclaration(Graph);				// Print switches in [ sw_threads.c ]
+	    printInThreadsFile_taskCounters(Graph);				    // Print taskCounters in [ sw_threads.c ]
+	    printInThreadsFile_ResetSwitchesFunctions(Graph);			// Print Reset Switches functions in [ sw_threads.c ]
+	    printInThreadsFile_JobsThreadsFunction(Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+    }
+
+}
 
 /*********************** Print Header source code in [ sw_threads.c ] file **************************/
 
@@ -1361,8 +1649,23 @@ void printInThreadsFile_ForStatement(){
 
 void printInThreadsFile_JobsThreadsFunction(SG** Graph){
 
+    if(tao)
+    {
+        // Do nothing...
+        return;
+    }
+    else if(taosw)
+    {
+        printInThreadsFile_JobsThreadsFunction_TAOSW(Graph);
+    }
+    else
+    {
+        printInThreadsFile_JobsThreadsFunction_SWITCHES(Graph);
+    }
 
 
+
+}
 
 void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG** Graph){
 	
@@ -1473,6 +1776,56 @@ void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG** Graph){
 	WRITE("%s", "\n}\n\n");
 	
 	
+	
+}
+
+
+
+void printInThreadsFile_JobsThreadsFunction_TAOSW(SG** Graph){
+	
+	SG 					*tempGraph = *Graph;
+	parallel_function 	*tempFunction;
+    
+	
+	
+	//Redirect output
+	__OUTP_IS_NOW_THREADS_FILE
+	
+		/* Print Job Thread function */
+	
+	tempGraph = *Graph;
+	WRITE("%s", "\n/*** Jobs Thread Function ***/\n\n");
+	
+	WRITE("%s", "void *thread_jobs(void *arg)\n");
+	WRITE("%s", "{\n");
+	WRITE("%s", "    long tid;\n");
+	WRITE("%s", "    long myFunction = 0;\n");
+	
+	    
+	WRITE("%s", "    __arguments *arguments;\n");
+	WRITE("%s", "    arguments = (__arguments*) arg;\n\n");
+	WRITE("%s", "    tid = arguments->id;\n");
+	WRITE("%s", "    myFunction = arguments->function_id;\n\n");
+	
+	WRITE("%s", "\n");
+	
+	WRITE("%s", "    switch(myFunction){\n\n");
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{
+			WRITE("            case __FUNCTION_%d:\n", tempFunction->id);
+			WRITE("                parallel_function_%d((void *)tid);\n", tempFunction->id);
+			WRITE("                // pthread_barrier_wait(&barrier[__FUNCTION_%d]);\n", tempFunction->id);
+			WRITE("                // __sw_resetSWitches_%d(tid);\n", tempFunction->id);
+			WRITE("%s", "                break;\n\n");
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "        }\n\n");	
+	WRITE("%s", "\n}\n\n");
 	
 }
 
