@@ -45,26 +45,8 @@
 
 /* Target Systems supported by SWitches */
 
-#define PHI         201
-#define AMD         202
-#define OFFICE_PC   203
-
-
-   /** PARAMETERS NEEDED BY SWTICHES FOR EACH TARGET SYSTEM **/
-   
-   #define PHI_MAX_CORES 60
-   #define PHI_H_THREADS 4
-   #define PHI_OS_THREAD 1
-   
-   #define AMD_MAX_CORES 12
-   #define AMD_H_THREADS 1
-   #define AMD_OS_THREAD 0
-   
-   #define OFFICE_MAX_CORES 4
-   #define OFFICE_H_THREADS 1
-   #define OFFICE_OS_THREAD 0
-   
-
+#define MIC         201
+#define MULTICORE   202
 
 
 /* Loop Scheduling Policies */
@@ -134,6 +116,14 @@
 #define AFFINITY_SCATTER  903
 #define AFFINITY_HYBRID   904
 #define AFFINITY_RANDOM   905
+
+
+/* Runtime Systems */
+
+#define RUNTIME_STATIC    1001
+#define RUNTIME_TAO       1002
+#define RUNTIME_TAOSW     1003
+
 
 
 /* Data Lists flags */

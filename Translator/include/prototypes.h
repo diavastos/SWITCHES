@@ -33,10 +33,7 @@ void recognizeCommandlineArguments(int argc, char **argv);						/* Read & recogn
 
 void printInMainFile_ParallelFunctions(parallel_function**, int);					/* Print source code in the main files */
 void printInThreadpoolFile(SG** );													/* Print the threadpool creating functions in the [ sw_threadpool.c ] file */
-    void printInThreadpoolFile_SWITCHES(SG** );										    /* Print for SWITCHES model */
 void printInSwFile(SG** );															/* Print declarations and definitions in the [ sw.h ] file */
-    void printInSwFile_SWITCHES(SG** );													/* Print declarations and definitions in the [ sw.h ] file for SWITCHES */
-    void printInSwFile_TAOSW(SG** );													/* Print declarations and definitions in the [ sw.h ] file for TAOSW */
 void printInThreadsFile(SG** );									                    /* Print in the [ sw_threads.c ] file */
     void printInThreadsFile_headerSourceCode(SG** );									/* Print the header source code for the threads in the [ sw_threads.c ] file */
     void printInThreadsFile_SwitchesDeclaration(SG**);									/* Print switches in threads files */
