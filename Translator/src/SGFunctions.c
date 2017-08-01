@@ -372,7 +372,7 @@ void printSG(SG** Graph, int printSGFlag){
 				if(tempTask->device == DEVICE_GPU)
 					fprintf(SGlogFile, "%s, ", "gpu");
 				else if(tempTask->device == DEVICE_XEON_PHI)
-					fprintf(SGlogFile, "%s, ", "phi");
+					fprintf(SGlogFile, "%s, ", "mic");
 				else if(tempTask->device == DEVICE_MULTI)
 					fprintf(SGlogFile, "%s, ", "multicore");
 					
@@ -1265,7 +1265,7 @@ void printSG(SG** Graph, int printSGFlag){
 						if(tempTask->device == DEVICE_GPU)
 							fprintf(SGlogFile, "%s, ", "gpu");
 						else if(tempTask->device == DEVICE_XEON_PHI)
-							fprintf(SGlogFile, "%s, ", "phi");
+							fprintf(SGlogFile, "%s, ", "mic");
 						else if(tempTask->device == DEVICE_MULTI)
 							fprintf(SGlogFile, "%s, ", "multicore");
 							

@@ -21,6 +21,7 @@ int totalInputFiles = 0;
 int kernels = 0;
 
 extern int targetSystem;
+extern int runtimeSystem;
 extern int printSGFlag;
 extern int assignmentPolicy;
 extern int affinityPolicy;
@@ -43,7 +44,7 @@ extern int  OSthread;
 
 void printVersion(){
     
-    printf("\n SWITCHES Translator Version 1.5 (26-07-2017)\n");
+    printf("\n SWITCHES Translator Version 1.6 (31-07-2017)\n");
     printf(" Copyright (c) 2017 Andreas Diavastos\n");
     printf(" Download: https://github.com/diavastos/SWITCHES\n");
     printf(" Contact : diavastos@cs.ucy.ac.cy\n\n");
@@ -57,27 +58,33 @@ void printVersion(){
 
 void printHelp(){
     
-    printf(ANSI_COLOR_MAGENTA "\n Usage:" ANSI_COLOR_GREEN "  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-tm] [-p <Option>]\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\n     Example:" ANSI_COLOR_BLUE " ./switches -s phi -i main.c functions.c -t 4 -p screen -a compact\n\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\n Usage:" ANSI_COLOR_GREEN "  ./switches -s <System> -i <inputFiles> -t <numberOfThreads> [-a <Option>] [-p <Option>]\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\n     Example:" ANSI_COLOR_BLUE " ./switches -s mic 60 240 -i main.c functions.c -t 4 -p screen -a compact\n\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t [-] Required:\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t -------------\n\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * -s <System>          :" ANSI_COLOR_CYAN " phi \n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_CYAN "\t                            amd \n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_CYAN "\t                            office \n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * -i <InputFiles>      :" ANSI_COLOR_CYAN " Input files that contain SW directives\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * -t <NumberOfThreads> :" ANSI_COLOR_CYAN " Number of threads to use for the execution\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * -s <System>          :" ANSI_COLOR_CYAN " mic <MAX_CORES HARDWARE_THREADS> \n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_CYAN "\t                            multicore <MAX_CORES HARDWARE_THREADS> \n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * -i <InputFiles>      :" ANSI_COLOR_BLUE " Input files that contain SW directives\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * -t <NumberOfThreads> :" ANSI_COLOR_BLUE " Number of threads to use for the execution\n" ANSI_COLOR_RESET);
     printf("\n");
-    printf(ANSI_COLOR_MAGENTA "\t [-] Scheduling (-sched)/Affinity (-a) Optimizations (Optional):\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t ---------------------------------------------------------------\n\n" ANSI_COLOR_RESET);    
+    
+    printf(ANSI_COLOR_MAGENTA "\t [-] Optional Runtime Optimizations ( Scheduling(-sched), Affinity(-a), Runtime(-r), GA(-nsga) ):\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t ------------------------------------------------------------------------------------------------\n\n" ANSI_COLOR_RESET);    
     printf(ANSI_COLOR_MAGENTA "\t   * [-sched <Option>]   :" ANSI_COLOR_CYAN " roundRobin (default)\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           random \n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           file <File with Scheduling Policy>\n" ANSI_COLOR_RESET);
     printf("\n");
+    
     printf(ANSI_COLOR_MAGENTA "\t   * [-a <Option>]       :" ANSI_COLOR_CYAN " none (default)\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           compact \n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           scatter \n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           hybrid \n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           random \n" ANSI_COLOR_RESET);
+    printf("\n");
+    
+    printf(ANSI_COLOR_MAGENTA "\t   * [-r <Option>]       :" ANSI_COLOR_CYAN " static (default)\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_CYAN "\t                           tao \n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_CYAN "\t                           taosw \n" ANSI_COLOR_RESET);
     printf("\n");
     
     printf(ANSI_COLOR_MAGENTA "\t   * [-nsga <Option>]    :" ANSI_COLOR_CYAN " -f <fileName>\n" ANSI_COLOR_RESET);
@@ -92,11 +99,11 @@ void printHelp(){
     
     printf(ANSI_COLOR_MAGENTA "\t [-] Optional:\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_MAGENTA "\t -------------\n\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * [-tm]              :" ANSI_COLOR_CYAN " Activate Transactional Memory   (NOT YET IMPLEMENTED)\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * [-p <Option>]      :" ANSI_COLOR_CYAN " Print the Synchronization Graph\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * [-tm]              :" ANSI_COLOR_BLUE " Activate Transactional Memory   (NOT YET IMPLEMENTED)\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * [-p <Option>]      :" ANSI_COLOR_BLUE " Print the Synchronization Graph\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                              Options: screen\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                                       file\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_MAGENTA "\t   * [-v] | [--version] :" ANSI_COLOR_CYAN " Print the current version of the Translator\n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_MAGENTA "\t   * [-v] | [--version] :" ANSI_COLOR_BLUE " Print the current version of the Translator\n" ANSI_COLOR_RESET);
     printf("\n");
     
     printf("\n");
@@ -114,7 +121,9 @@ void recognizeCommandlineArguments(int argc, char **argv){
     int temp_objectives = 1;
     int temp_j = 0;
     int countInputFiles = 0;
+    int countSystemParams = 0;
     bool targetSystemFound = FALSE;
+    bool runtimeSystemFound = FALSE;
     bool inputFilesFound = FALSE;
     bool transactionsFound = FALSE;
     bool printSGFound = FALSE;
@@ -150,12 +159,10 @@ void recognizeCommandlineArguments(int argc, char **argv){
                 printHelp();
             }
                 
-            if(!strcmp(argv[i], "phi"))
-                targetSystem = PHI;
-            else if(!strcmp(argv[i], "amd"))
-                targetSystem = AMD;
-            else if(!strcmp(argv[i], "office"))
-                targetSystem = OFFICE_PC;
+            if(!strcmp(argv[i], "mic"))
+                targetSystem = MIC;
+            else if(!strcmp(argv[i], "multicore"))
+                targetSystem = MULTICORE;
             else
             {
                 ERROR_COMMANDS("System [ %s ] not recognized!", argv[i])
@@ -163,34 +170,75 @@ void recognizeCommandlineArguments(int argc, char **argv){
             }
             
             
-            switch(targetSystem){
-        
-                case PHI:
-                    maxCores = PHI_MAX_CORES;
-                    hThreads = PHI_H_THREADS;
-                    OSthread = PHI_OS_THREAD;
-                    break;
+            // Count the number of input files given
+            i++;
+            countSystemParams = 0;
+            while(argv[i] && strcmp(argv[i], "-i")
+                               && strcmp(argv[i], "-t")
+                               && strcmp(argv[i], "-tm")
+                               && strcmp(argv[i], "-p")
+                               && strcmp(argv[i], "-a")
+                               && strcmp(argv[i], "-nsga")
+                               && strcmp(argv[i], "-sched")
+                               && strcmp(argv[i], "-r"))
+            {
+                if(countSystemParams == 0)
+                    maxCores = atoi(argv[i]);
+                else if(countSystemParams == 1)
+                    hThreads = atoi(argv[i]);
                     
-                case AMD:
-                    maxCores = AMD_MAX_CORES;
-                    hThreads = AMD_H_THREADS;
-                    OSthread = AMD_OS_THREAD;
-                    break;
-                    
-                case OFFICE_PC:
-                    maxCores = OFFICE_MAX_CORES;
-                    hThreads = OFFICE_H_THREADS;
-                    OSthread = OFFICE_OS_THREAD;
-                    break;
-                    
+                countSystemParams++;
+                i++;
+            }
             
+            if(countSystemParams != 2)
+            {
+                ERROR_COMMANDS("System cores and Hardware threads %s not given correctly!", "parameters")
+                printHelp();
+            }
+            
+            switch(targetSystem){
+                case MIC:
+                    OSthread = 1;
+                    break;
+                    
+                case MULTICORE:
+                    OSthread = 0;
+                    break;
+                    
                 default:
                     // nothing
                     break;
         }
-            
-            
             targetSystemFound = TRUE;
+            i--;
+            continue;
+        }
+        
+        
+        /** If command line argument  is for runtime system **/
+        if(!strcmp(argv[i], "-r") && !runtimeSystemFound)
+        {   
+            i++;
+            if(!argv[i])
+            {
+                ERROR_COMMANDS("%s not declared!", "Runtime")
+                printHelp();
+            }
+                
+            if(!strcmp(argv[i], "static"))
+                runtimeSystem = RUNTIME_STATIC;
+            else if(!strcmp(argv[i], "tao"))
+                runtimeSystem = RUNTIME_TAO;
+            else if(!strcmp(argv[i], "taosw"))
+                runtimeSystem = RUNTIME_TAOSW;
+            else
+            {
+                ERROR_COMMANDS("Runtime [ %s ] not recognized!", argv[i])
+                printHelp();
+            }
+            
+            runtimeSystemFound = TRUE;
             continue;
         }
 
@@ -214,7 +262,8 @@ void recognizeCommandlineArguments(int argc, char **argv){
                                && strcmp(argv[temp_i], "-p")
                                && strcmp(argv[temp_i], "-a")
                                && strcmp(argv[temp_i], "-nsga")
-                               && strcmp(argv[temp_i], "-sched"))
+                               && strcmp(argv[temp_i], "-sched")
+                               && strcmp(argv[temp_i], "-r"))
             {
                 countInputFiles++;
                 temp_i++;
@@ -237,7 +286,8 @@ void recognizeCommandlineArguments(int argc, char **argv){
                           && strcmp(argv[i], "-p")
                           && strcmp(argv[i], "-a")
                           && strcmp(argv[i], "-nsga")
-                          && strcmp(argv[i], "-sched"))
+                          && strcmp(argv[i], "-sched")
+                          && strcmp(argv[i], "-r"))
             {
                 inputFiles[j] = malloc(sizeof(char) * strlen(argv[i]));
                 strcpy(inputFiles[j], argv[i]);
@@ -249,12 +299,16 @@ void recognizeCommandlineArguments(int argc, char **argv){
             inputFilesFound = TRUE;
             continue;
         }
-        
+                        
         /** If command line argument  is for Transactional Memory **/
         if(!strcmp(argv[i], "-tm") && !transactionsFound)
         {   
             transactions = TRUE;
             transactionsFound = TRUE;
+            
+            ERROR_COMMANDS("%s not implemented yet!", "TM Version")
+            printHelp();
+            
             continue;
         }
         
@@ -595,7 +649,8 @@ void recognizeCommandlineArguments(int argc, char **argv){
                            && strcmp(argv[i], "-p")
                            && strcmp(argv[i], "-a")
                            && strcmp(argv[i], "-nsga")
-                           && strcmp(argv[i], "-sched"))
+                           && strcmp(argv[i], "-sched")
+                           && strcmp(argv[i], "-r"))
                 {
                     countInputFiles++;
                 }
@@ -647,7 +702,7 @@ void recognizeCommandlineArguments(int argc, char **argv){
     }
     
     // Check that affinity scheduling matches with the target system processor
-    if(targetSystem != PHI && (affinityPolicy == AFFINITY_SCATTER || affinityPolicy == AFFINITY_HYBRID))
+    if(targetSystem != MIC && (affinityPolicy == AFFINITY_SCATTER || affinityPolicy == AFFINITY_HYBRID))
     {
         ERROR_COMMANDS("Affinity policies [%s] and [%s] is only supported by Intel Xeon Phi", "Stack", "Hybrid")
         printHelp();

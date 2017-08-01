@@ -24,6 +24,7 @@ extern int kernels;
 extern bool firstPass;
 extern int affinityPolicy;
 extern int targetSystem;
+extern int runtimeSystem;
 extern int globalDeclarationCounter;
 extern char globalDeclarationString[SIZE][SIZE];
 extern char includesDeclaration[SIZE][SIZE];
@@ -386,6 +387,8 @@ void printInSwFile(SG** Graph){
 	WRITE("%s", "\n\n");
 
 }
+
+
 
 
 
@@ -1335,8 +1338,7 @@ void printInThreadsFile_ForStatement(){
 
 /***************** Print Jobs Threads Function in [ sw_threads.c ] file ********************/
 
-
-void printInThreadsFile_JobsThreadsFunction(SG** Graph){
+void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG** Graph){
 	
 	SG 					*tempGraph = *Graph;
 	parallel_function 	*tempFunction;
@@ -1445,6 +1447,56 @@ void printInThreadsFile_JobsThreadsFunction(SG** Graph){
 	WRITE("%s", "\n}\n\n");
 	
 	
+	
+}
+
+
+
+void printInThreadsFile_JobsThreadsFunction_TAOSW(SG** Graph){
+	
+	SG 					*tempGraph = *Graph;
+	parallel_function 	*tempFunction;
+    
+	
+	
+	//Redirect output
+	__OUTP_IS_NOW_THREADS_FILE
+	
+		/* Print Job Thread function */
+	
+	tempGraph = *Graph;
+	WRITE("%s", "\n/*** Jobs Thread Function ***/\n\n");
+	
+	WRITE("%s", "void *thread_jobs(void *arg)\n");
+	WRITE("%s", "{\n");
+	WRITE("%s", "    long tid;\n");
+	WRITE("%s", "    long myFunction = 0;\n");
+	
+	    
+	WRITE("%s", "    __arguments *arguments;\n");
+	WRITE("%s", "    arguments = (__arguments*) arg;\n\n");
+	WRITE("%s", "    tid = arguments->id;\n");
+	WRITE("%s", "    myFunction = arguments->function_id;\n\n");
+	
+	WRITE("%s", "\n");
+	
+	WRITE("%s", "    switch(myFunction){\n\n");
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{
+			WRITE("            case __FUNCTION_%d:\n", tempFunction->id);
+			WRITE("                parallel_function_%d((void *)tid);\n", tempFunction->id);
+			WRITE("                // pthread_barrier_wait(&barrier[__FUNCTION_%d]);\n", tempFunction->id);
+			WRITE("                // __sw_resetSWitches_%d(tid);\n", tempFunction->id);
+			WRITE("%s", "                break;\n\n");
+			tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+	WRITE("%s", "        }\n\n");	
+	WRITE("%s", "\n}\n\n");
 	
 }
 

@@ -26,6 +26,7 @@
     int  currentTask 		= 1;
     int  currentFor			= -1;
     int  targetSystem 		= 0;
+    int  runtimeSystem 		= RUNTIME_STATIC;
     int  printSGFlag 		= 0;
     int  assignmentPolicy 	= SCHED_RR;
     int  affinityPolicy     = AFFINITY_NONE;
@@ -2963,7 +2964,7 @@ reduction_identifier:
 
 int main(int argc, char *argv[]){
     
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0, k = 0, dum;
     char outputFile[INPUT_SIZE];
         
     
@@ -3123,53 +3124,120 @@ int main(int argc, char *argv[]){
 	    
 	    if(firstPass)
 	    {
-			// Open [ sw_threadpool.c ] Output File
-	        bzero(outputFile, sizeof(outputFile));
-	        sprintf(outputFile, "sw_threadpool.c");
-	        outp_sw_threadpool = fopen(outputFile, "w");
-	        if(!outp_sw_threadpool){
-	            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
-	            exit(-1);
-	        }
-	        
-	        // Print source code of [ sw_threadpool.c ]
-	        printInThreadpoolFile(&Graph);
-			
-			// Open [ sw.h ] Output File
-			bzero(outputFile, sizeof(outputFile));
-	        sprintf(outputFile, "sw.h");
-	        outp_sw_h = fopen(outputFile, "w");
-	        if(!outp_sw_h){
-	            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
-	            exit(-1);
-	        }
-	        
-	        // Print source code of [ sw.h ]
-	        printInSwFile(&Graph);
-	        
-	        
-	        // Open [ sw_threads.c ] Output File
-	        bzero(outputFile, sizeof(outputFile));
-	        sprintf(outputFile, "sw_threads.c");
-	        outp_sw_threads = fopen(outputFile, "w");
-	        if(!outp_sw_threads){
-	            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
-	            exit(-1);
-	        }
-	        
-	        printInThreadsFile_headerSourceCode(&Graph);				// Print header source code of [ sw_threads.c ]
-	        printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
-	        printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
-	        printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
-	        printInThreadsFile_JobsThreadsFunction(&Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+            
+            switch(runtimeSystem){
+                
+                case RUNTIME_STATIC:
+                
+                        // Open [ sw_threadpool.c ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw_threadpool.c");
+                        outp_sw_threadpool = fopen(outputFile, "w");
+                        if(!outp_sw_threadpool){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        // Print source code of [ sw_threadpool.c ]
+                        printInThreadpoolFile(&Graph);
+                        
+                        
+                        // Open [ sw.h ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw.h");
+                        outp_sw_h = fopen(outputFile, "w");
+                        if(!outp_sw_h){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        // Print source code of [ sw.h ]
+                        printInSwFile(&Graph);
+                        
+                        
+                        // Open [ sw_threads.c ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw_threads.c");
+                        outp_sw_threads = fopen(outputFile, "w");
+                        if(!outp_sw_threads){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        printInThreadsFile_headerSourceCode(&Graph);				// Print header source code of [ sw_threads.c ]
+                        printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
+                        printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
+                        printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
+                        printInThreadsFile_JobsThreadsFunction_SWITCHES(&Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+
+                        break;
+                        
+                case RUNTIME_TAO:
+                        
+                        // Do nothing...
+                        break;
+                        
+                case RUNTIME_TAOSW:
+                
+                        // Open [ sw.h ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw.h");
+                        outp_sw_h = fopen(outputFile, "w");
+                        if(!outp_sw_h){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        // Print source code of [ sw.h ]
+                        printInSwFile(&Graph);
+                        
+                        // Open [ sw_threads.c ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw_threads.c");
+                        outp_sw_threads = fopen(outputFile, "w");
+                        if(!outp_sw_threads){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        printInThreadsFile_headerSourceCode(&Graph);				// Print header source code of [ sw_threads.c ]
+                        printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
+                        printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
+                        printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
+                        printInThreadsFile_JobsThreadsFunction_TAOSW(&Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+                
+                        break;
+                
+                default:
+                    ERROR_COMMANDS("[ %s ] not recognized!", "Runtime System")
+                    exit(-1);
+            }
 		}
 		
 		
 		if(!firstPass)
 		{
-			fclose(outp_sw_h);       	// Close output file [ sw.h ]
-		    fclose(outp_sw_threads);    // Close output file [ sw_threads.c ]
-		    fclose(outp_sw_threadpool); // Close output file [ sw_threadpool.c ]
+            switch(runtimeSystem){
+                
+                case RUNTIME_STATIC:
+                        fclose(outp_sw_h);       	// Close output file [ sw.h ]
+                        fclose(outp_sw_threads);    // Close output file [ sw_threads.c ]
+                        fclose(outp_sw_threadpool); // Close output file [ sw_threadpool.c ]
+                        break;
+                        
+                case RUNTIME_TAO:
+                        // Close nothing...
+                        break;
+                        
+                case RUNTIME_TAOSW:
+                        fclose(outp_sw_h);       	// Close output file [ sw.h ]
+                        fclose(outp_sw_threads);    // Close output file [ sw_threads.c ]
+                        break;
+                
+                default:
+                    ERROR_COMMANDS("[ %s ] not recognized!", "Runtime System")
+                    exit(-1);
+            }
 		}
 			
 		pass++;
@@ -3181,7 +3249,7 @@ int main(int argc, char *argv[]){
 	    
     }while(pass <= PARSES);
     
-   
+    
     printSG(&Graph, printSGFlag);
     printErrorMessages(); 
     return 0;
