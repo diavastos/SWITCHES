@@ -20,21 +20,20 @@ $ export PATH=$PATH:/full/path/to/current/directory
 
 __Usage__
 
-Usage:  ./switches -s _System_ -i _inputFiles_ -t _numberOfThreads_ [-a _Option_] [-tm] [-p _Option_]
+Usage:  ./switches -s _System_ -i _inputFiles_ -t _numberOfThreads_ [-a _Option_] [-p _Option_] ...
 
-     Example: ./switches -s phi -i main.c functions.c -t 4 -p screen -a compact
+     Example: ./switches -s mic 60 240 -i main.c functions.c -t 4 -p screen -a compact
 
 	 [-] Required:
 	 -------------
 
-	   * -s <System>          : phi 
-	                            amd 
-	                            office 
+	   * -s <System>          : mic <MAX_CORES HARDWARE_THREADS> 
+	                            multicore <MAX_CORES HARDWARE_THREADS> 
 	   * -i <InputFiles>      : Input files that contain SW directives
 	   * -t <NumberOfThreads> : Number of threads to use for the execution
 
-	 [-] Scheduling (-sched)/Affinity (-a) Optimizations (Optional):
-	 ---------------------------------------------------------------
+	 [-] Optional Runtime Optimizations ( Scheduling(-sched), Affinity(-a), Runtime(-r), GA(-nsga) ):
+	 ------------------------------------------------------------------------------------------------
 
 	   * [-sched <Option>]   : roundRobin (default)
 	                           random 
@@ -45,6 +44,10 @@ Usage:  ./switches -s _System_ -i _inputFiles_ -t _numberOfThreads_ [-a _Option_
 	                           scatter 
 	                           hybrid 
 	                           random 
+
+	   * [-r <Option>]       : static (default)
+	                           tao 
+	                           taosw 
 
 	   * [-nsga <Option>]    : -f <fileName>
 	                           <population : generations : [NUM : objectives] : mutation : crossover> 
