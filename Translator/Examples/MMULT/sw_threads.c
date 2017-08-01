@@ -78,37 +78,17 @@ void *thread_jobs(void *arg)
     tid = arguments->id;
     myFunction = arguments->function_id;
 
-    if(tid == __MAIN_KERNEL){
-        currentFunction = myFunction;
-        __sync_synchronize();
-     }
 
-
-    do{
-
-        pthread_barrier_wait(&barrier[0]);
-        myFunction = currentFunction;
-        __sync_synchronize();
-
-        switch(myFunction){
+    switch(myFunction){
 
             case __FUNCTION_1:
                 parallel_function_1((void *)tid);
-                pthread_barrier_wait(&barrier[__FUNCTION_1]);
-                __sw_resetSWitches_1(tid);
+                // pthread_barrier_wait(&barrier[__FUNCTION_1]);
+                // __sw_resetSWitches_1(tid);
                 break;
 
         }
 
-        if(tid == __MAIN_KERNEL)
-            break;
-
-    }while(myFunction != -1);
-
-
-
-    if(tid != __MAIN_KERNEL)
-        pthread_exit(NULL);
 
 }
 
