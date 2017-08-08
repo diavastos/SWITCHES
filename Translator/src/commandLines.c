@@ -237,7 +237,7 @@ void recognizeCommandlineArguments(int argc, char **argv){
                 ERROR_COMMANDS("Runtime [ %s ] not recognized!", argv[i])
                 printHelp();
             }
-            
+                        
             runtimeSystemFound = TRUE;
             continue;
         }
@@ -373,7 +373,7 @@ void recognizeCommandlineArguments(int argc, char **argv){
                 affinityPolicy = AFFINITY_RANDOM;
             else
             {
-                ERROR_COMMANDS("Print output [ %s ] not recognized!", argv[i])
+                ERROR_COMMANDS("Affinity Policy [ %s ] not recognized!", argv[i])
                 printHelp();
             }
             
@@ -670,7 +670,7 @@ void recognizeCommandlineArguments(int argc, char **argv){
                 assignmentPolicy = SCHED_RANDOM;
             else
             {
-                ERROR_COMMANDS("Print output [ %s ] not recognized!", argv[i])
+                ERROR_COMMANDS("Scheduling Policy [ %s ] not recognized!", argv[i])
                 printHelp();
             }
             
@@ -706,6 +706,21 @@ void recognizeCommandlineArguments(int argc, char **argv){
     {
         ERROR_COMMANDS("Affinity policies [%s] and [%s] is only supported by Intel Xeon Phi", "Stack", "Hybrid")
         printHelp();
+    }
+    
+    /* Check Combinations of different command-line parameters */
+    if(runtimeSystem == RUNTIME_TAO && (affinityFound || nsgaFound || policyFound))
+    {
+        ERROR_COMMANDS("Options (-sched, -a, -nsga) cannot be used with runtime system [ %s ]", "tao")
+        exit(-1);
+        //printHelp();
+    }
+    
+    if(runtimeSystem == RUNTIME_TAOSW && (affinityFound || nsgaFound))
+    {
+        ERROR_COMMANDS("Options (-a, -nsga) cannot be used with runtime system [ %s ]", "taosw")
+        exit(-1);
+        //printHelp();
     }
     
 
