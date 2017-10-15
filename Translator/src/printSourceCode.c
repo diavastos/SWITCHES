@@ -94,6 +94,13 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
         
                 WRITE("\t__FUNC_%d* __function_%d;\n", currentFunction, currentFunction);
                 WRITE("\t__function_%d = new __FUNC_%d(%d, %d, %d);\n", currentFunction, currentFunction, currentFunction, functionsCounter, TAOwidth);
+                
+                loop1[j]->make_edge(loop2[j]);
+                
+                WRITE("\tgotao_push_init(__function_%d, %d %% gotao_nthreads);\n\n", currentFunction, currentFunction);
+                
+                
+                
                 WRITE("\tgotao_push_init(__function_%d, %d %% gotao_nthreads);\n\n", currentFunction, currentFunction);
                 
                 if(currentFunction == functionsCounter){
@@ -235,7 +242,15 @@ void printInSwFile(SG** Graph){
 	
 	/* Print General Defintions */
 	
-	WRITE("%s", "/************************** General Definitions *****************************/\n\n");
+	WRITE("%s", "/************************** TAO Definitions *****************************/\n\n");
+	WRITE("#define GOTAO_NTHREADS  %d\n", kernels);
+	//WRITE("#define MAXTHREADS  %d\n", ????);
+	//WRITE("#define IDLE_SWITCH  %d\n", maxCores*hThreads);
+	WRITE("%s", "\n\n");
+    
+    /* Print TAO + TAOSW Defintions */
+	
+	WRITE("%s", "/************************** TAO Definitions *****************************/\n\n");
 	WRITE("#define __KERNELS  %d\n", kernels);
 	WRITE("%s", "#define __PTHREADS (__KERNELS-1)\n");
 	WRITE("%s", "#define __ON       1\n");
@@ -2218,11 +2233,13 @@ void printInTaoFile(SG** Graph){
              WRITE("\t\t%s\n", "{");
              WRITE("\t\t\t%s\n", "int tid = threadid - leader;");
              WRITE("\t\t\t%s\n", "//int tid = taoID*width + threadid - leader;");
+             WRITE("\t\t\tfprintf(stderr, \"FUNC_%d: threadid: %%d - leader: %%d - taoID: %%d - tid:%%d -- IN\\n\", threadid, leader, taoID, tid);\n", tempFunction->id);
              WRITE("\t\t\t%s\n", "__arguments *arguments;");
              WRITE("\t\t\t%s\n", "arguments = (__arguments*)malloc(sizeof(__arguments));");
              WRITE("\t\t\t%s\n", "arguments->id = tid;");
              WRITE("\t\t\targuments->function_id = %d;\n", tempFunction->id);
              WRITE("\t\t\t%s\n", "thread_jobs((void *)arguments);");
+             WRITE("\t\t\tfprintf(stderr, \"FUNC_%d: threadid: %%d - leader: %%d - taoID: %%d - tid:%%d -- OUT\\n\", threadid, leader, taoID, tid);\n", tempFunction->id);
              WRITE("\t\t%s\n", "}");
              
              

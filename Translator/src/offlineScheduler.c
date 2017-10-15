@@ -44,6 +44,7 @@ void offlineScheduling_CreateDependencies(SG** Graph){
 		
 	SG 					*tempGraph = *Graph;
 	parallel_function 	*tempFunction;
+	parallel_function 	*tempFunction2;
 	section 			*tempSection;
 	task 				*tempTask;
 	dataList			*tempDataList;
@@ -66,6 +67,362 @@ void offlineScheduling_CreateDependencies(SG** Graph){
 		tempFunction = tempGraph->parallel_functions;
 		while(tempFunction)
 		{
+            /** Take care of parallel functions dependencies **/
+            
+            /*** COPY FROM HERE ***/
+					
+				tempProducers = &(tempFunction->producers);
+				tempConsumers = &(tempFunction->consumers);
+				
+				/* Check Depend [ IN ] list */
+				 				 
+				 tempDataList = tempFunction->dependInList; 
+				 while(tempDataList)
+				 {
+					 tempFunction2 = tempGraph->parallel_functions;
+					 while(tempFunction2)
+					 {
+						 if(tempFunction2->id < tempFunction->id)							// Check all my previous tasks
+						 {
+							 // Check if it is already a producer -- dont put in twice 
+							 tempProducers2 = tempFunction->producers;
+							 while(tempProducers2)
+							 {
+								 if(tempProducers2->id == tempFunction2->id)
+									break;
+								tempProducers2 = tempProducers2->next;
+							 }
+							 if(tempProducers2)
+							 {
+								 tempFunction2 = tempFunction2->next;
+								 continue;
+							 }
+								
+							 
+							 /** Check the Depend [ OUT ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependOutList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {									 
+									if((*tempProducers) == NULL)
+									{
+										(*tempProducers) = (producer*)malloc(sizeof(producer));
+										(*tempProducers)->id = tempFunction2->id;
+										(*tempProducers)->kernels = NULL;           // NOT USED FOR PARALLEL FUNCTIONS DEPENDENCIES
+										(*tempProducers)->next = NULL;
+									}
+									else
+									{
+										tempProducers2 = tempFunction->producers;
+										while(tempProducers2 && tempProducers2->next)
+											tempProducers2 = tempProducers2->next;
+										
+										tempProducers2->next = (producer*)malloc(sizeof(producer));
+										tempProducers2->next->id = tempFunction2->id;
+										tempProducers2->next->kernels = NULL;
+										tempProducers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+							 
+							 
+							  /** Check the Depend [ INOUT ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependInOutList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {
+									if((*tempProducers) == NULL)
+									{
+										(*tempProducers) = (producer*)malloc(sizeof(producer));
+										(*tempProducers)->id = tempFunction2->id;
+										(*tempProducers)->kernels = NULL;
+										(*tempProducers)->next = NULL;
+									}
+									else
+									{
+										tempProducers2 = tempFunction->producers; 
+										while(tempProducers2 && tempProducers2->next)
+											tempProducers2 = tempProducers2->next;
+										
+										tempProducers2->next = (producer*)malloc(sizeof(producer));
+										tempProducers2->next->id = tempFunction2->id;
+										tempProducers2->next->kernels = NULL;
+										tempProducers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+						}
+						tempFunction2 = tempFunction2->next;
+					 }
+					 tempDataList = tempDataList->next;
+				 }
+								
+				
+				/* Check Depend [ Out ] list */
+				 
+				 tempDataList = tempFunction->dependOutList; 
+				 while(tempDataList)
+				 {
+					 tempFunction2 = tempGraph->parallel_functions;
+					 while(tempFunction2)
+					 { 
+						 if(tempFunction2->id > tempFunction->id)							// Check all my proceeding tasks
+						 {
+							 // Check if it is already a consumer -- Dont put in the list twice
+							 tempConsumers2 = tempFunction->consumers;
+							 while(tempConsumers2)
+							 {
+								 if(tempConsumers2->id == tempFunction2->id)
+									break;
+								tempConsumers2 = tempConsumers2->next;
+							 }
+							 if(tempConsumers2)
+							 {
+								 tempFunction2 = tempFunction2->next;
+								 continue;
+							 }
+							 
+							 /** Check the Depend [ IN ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependInList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {									 
+									if((*tempConsumers) == NULL)
+									{
+										(*tempConsumers) = (producer*)malloc(sizeof(producer));
+										(*tempConsumers)->id = tempFunction2->id;
+										(*tempConsumers)->kernels = NULL;
+										(*tempConsumers)->next = NULL;
+									}
+									else
+									{
+										tempConsumers2 = tempFunction->consumers;
+										while(tempConsumers2 && tempConsumers2->next)
+											tempConsumers2 = tempConsumers2->next;
+										
+										tempConsumers2->next = (producer*)malloc(sizeof(producer));
+										tempConsumers2->next->id = tempFunction2->id;
+										tempConsumers2->next->kernels = NULL;
+										tempConsumers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+							 
+							 
+							  /** Check the Depend [ INOUT ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependInOutList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {
+									if((*tempConsumers) == NULL)
+									{
+										(*tempConsumers) = (producer*)malloc(sizeof(producer));
+										(*tempConsumers)->id = tempFunction2->id;
+										(*tempConsumers)->kernels = NULL;
+										(*tempConsumers)->next = NULL;
+									}
+									else
+									{
+										tempConsumers2 = tempFunction->consumers;
+										while(tempConsumers2 && tempConsumers2->next)
+											tempConsumers2 = tempConsumers2->next;
+										
+										tempConsumers2->next = (producer*)malloc(sizeof(producer));
+										tempConsumers2->next->id = tempFunction2->id;
+										tempConsumers2->next->kernels = NULL;
+										tempConsumers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+						}
+						tempFunction2 = tempFunction2->next;
+					 }
+					 tempDataList = tempDataList->next;
+				 }
+				 
+				
+				/* Check Depend [ INOUT ] list */
+				 
+				 
+				 tempDataList = tempFunction->dependInOutList; 
+				 while(tempDataList)
+				 {
+					 tempFunction2 = tempGraph->parallel_functions;
+					 while(tempFunction2)
+					 {
+						 if(tempFunction2->id < tempFunction->id)							// Check all my previous tasks
+						 {
+							 // Check if it is already a producer -- Don't put it in the list twice
+							 tempProducers2 = tempFunction->producers;
+							 while(tempProducers2)
+							 {
+								 if(tempProducers2->id == tempFunction2->id)
+									break;
+								tempProducers2 = tempProducers2->next;
+							 }
+							 if(tempProducers2)
+							 {
+								 tempFunction2 = tempFunction2->next;
+								 continue;
+							 }
+							 
+							 /** Check the Depend [ OUT ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependOutList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {									 
+									if((*tempProducers) == NULL)
+									{
+										(*tempProducers) = (producer*)malloc(sizeof(producer));
+										(*tempProducers)->id = tempFunction2->id;
+										(*tempProducers)->kernels = NULL;
+										(*tempProducers)->next = NULL;
+									}
+									else
+									{
+										tempProducers2 = tempFunction->producers;
+										while(tempProducers2 && tempProducers2->next)
+											tempProducers2 = tempProducers2->next;
+										
+										tempProducers2->next = (producer*)malloc(sizeof(producer));
+										tempProducers2->next->id = tempFunction2->id;
+										tempProducers2->next->kernels = NULL;
+										tempProducers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+							 
+							 
+							  /** Check the Depend [ INOUT ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependInOutList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {
+									if((*tempProducers) == NULL)
+									{
+										(*tempProducers) = (producer*)malloc(sizeof(producer));
+										(*tempProducers)->id = tempFunction2->id;
+										(*tempProducers)->kernels = NULL;
+										(*tempProducers)->next = NULL;
+									}
+									else
+									{
+										tempProducers2 = tempFunction->producers;
+										while(tempProducers2 && tempProducers2->next)
+											tempProducers2 = tempProducers2->next;
+										
+										tempProducers2->next = (producer*)malloc(sizeof(producer));
+										tempProducers2->next->id = tempFunction2->id;
+										tempProducers2->next->kernels = NULL;
+										tempProducers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+						}
+						
+						
+						if(tempFunction2->id > tempFunction->id)							// Check all my proceeding tasks
+						 {
+							 // Check if it is already in the list -- Dont put it in twice
+							 tempConsumers2 = tempFunction->consumers;
+							 while(tempConsumers2)
+							 {
+								 if(tempConsumers2->id == tempFunction2->id)
+									break;
+								tempConsumers2 = tempConsumers2->next;
+							 }
+							 if(tempConsumers2)
+							 {
+								 tempFunction2 = tempFunction2->next;
+								 continue;
+							 }
+							 
+							 /** Check the Depend [ IN ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependInList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {									 
+									if((*tempConsumers) == NULL)
+									{
+										(*tempConsumers) = (producer*)malloc(sizeof(producer));
+										(*tempConsumers)->id = tempFunction2->id;
+										(*tempConsumers)->kernels = NULL;
+										(*tempConsumers)->next = NULL;
+									}
+									else
+									{
+										tempConsumers2 = tempFunction->consumers;
+										while(tempConsumers && tempConsumers2->next)
+											tempConsumers2 = tempConsumers2->next;
+										
+										tempConsumers2->next = (producer*)malloc(sizeof(producer));
+										tempConsumers2->next->id = tempFunction2->id;
+										tempConsumers2->next->kernels = NULL;
+										tempConsumers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+							 
+							 
+							  /** Check the Depend [ INOUT ] list of my previous tasks **/
+							 
+							 tempDataList2 = tempFunction2->dependInOutList;			
+							 while(tempDataList2)
+							 {
+								 if(!strcmp(tempDataList->variableName, tempDataList2->variableName))
+								 {
+									if((*tempConsumers) == NULL)
+									{
+										(*tempConsumers) = (producer*)malloc(sizeof(producer));
+										(*tempConsumers)->id = tempFunction2->id;
+										(*tempConsumers)->kernels = NULL;
+										(*tempConsumers)->next = NULL;
+									}
+									else
+									{
+										tempConsumers2 = tempFunction->consumers;
+										while(tempConsumers2 && tempConsumers2->next)
+											tempConsumers2 = tempConsumers2->next;
+										
+										tempConsumers2->next = (producer*)malloc(sizeof(producer));
+										tempConsumers2->next->id = tempFunction2->id;
+										tempConsumers2->next->kernels = NULL;
+										tempConsumers2->next->next = NULL;
+									}
+								 }
+								 tempDataList2 = tempDataList2->next;
+							 }
+						}
+						tempFunction2 = tempFunction2->next;
+					 }
+					 tempDataList = tempDataList->next;
+				 }				
+				 
+				 
+				 /*** COPY UNTIL HERE ***/
+            
+            
 			/** Take care of functions tasks **/
 					
 			tempTask = tempFunction->tasks;
@@ -1629,6 +1986,7 @@ void offlineScheduling_TransitiveReductionOfConsumers(SG** Graph){
 		
 	SG 					*tempGraph = *Graph;
 	parallel_function 	*tempFunction;
+	parallel_function 	*tempFunction2;
 	section 			*tempSection;
 	task 				*tempTask;
 	producer			*tempConsumers;
@@ -1641,6 +1999,7 @@ void offlineScheduling_TransitiveReductionOfConsumers(SG** Graph){
 	task				*tempTask2;
 	
 	long				taskCounter = 0;
+	long				functionCounter = 0;
 	Stack				tred_Stack;
 	Stack				temp_Stack;
 	
@@ -1650,9 +2009,148 @@ void offlineScheduling_TransitiveReductionOfConsumers(SG** Graph){
 
 	while(tempGraph)
 	{
+        /** Take care of parallel functions **/
+			
+        // Counter how many tasks there are in a function -- to allocate the tred_consumer_array[TASKS][TASKS]
+        tempFunction = tempGraph->parallel_functions;;
+        while(tempFunction)
+        {
+            functionCounter++;
+            tempFunction = tempFunction->next;
+        }
+        
+        // Allocate memory for tred_array & visited
+        tred_array = (bool**)malloc(sizeof(bool*)*functionCounter);
+        for(i = 0; i < functionCounter; i++)
+            tred_array[i] = (bool*)malloc(sizeof(bool)*functionCounter);
+        
+        // Initialize tred_array
+        for(i = 0; i < functionCounter; i++)
+            for(j = 0; j< functionCounter; j++)
+                tred_array[i][j] = FALSE;
+        
+        // Add consumers in the tred_array
+        i = 0;
+        tempFunction = tempGraph->parallel_functions;
+        while(tempFunction)
+        {
+            tempConsumers = tempFunction->consumers;
+            while(tempConsumers)
+            {
+                j = 0;
+                tempFunction2 = tempGraph->parallel_functions;
+                while(tempFunction2)
+                {
+                    if(tempFunction2->id == tempConsumers->id)
+                    {
+                        tred_array[i][j] = TRUE;
+                        break;
+                    }
+                    j++;
+                    tempFunction2 = tempFunction2->next;
+                }
+                tempConsumers = tempConsumers->next;
+            }
+            i++;
+            tempFunction = tempFunction->next;
+        }
+        
+        
+        // Transitive Reduction of tred_array	-- ITERATIVE SOLUTION	
+        
+        Stack_Init(&tred_Stack, functionCounter*functionCounter);
+        Stack_Init(&temp_Stack, functionCounter);
+        
+        for(i = 0; i < functionCounter; i++)
+        {
+            Stack_Push(&tred_Stack, i, functionCounter*functionCounter);
+            
+            while(!StackIsEmpty(&tred_Stack))
+            {		
+                k = Stack_Pop(&tred_Stack);
+                
+                for(j = 0; j < functionCounter; j++)
+                {						
+                    if(tred_array[k][j] == TRUE)
+                    {
+                        Stack_Push(&tred_Stack, j, functionCounter*functionCounter);
+                        if(k == i)
+                        {
+                            Stack_Push(&temp_Stack, j, functionCounter*functionCounter);
+                        }
+                        else
+                        {
+                            for(ii = 0; ii < temp_Stack.size; ii++)
+                            {
+                                if(j == temp_Stack.data[ii])
+                                    tred_array[i][j] = FALSE;
+                            }
+                        }
+                    }
+                }
+            }
+            while(!StackIsEmpty(&temp_Stack))
+                Stack_Pop(&temp_Stack);
+        }
+        
+        
+        // Copy new consumers to tred_consumers in SG
+        
+        i = 0;
+        tempFunction = tempGraph->parallel_functions;
+        while(tempFunction)
+        {
+            tempConsumers2 = &(tempFunction->tred_consumers);
+            
+            tempConsumers = tempFunction->consumers;
+            while(tempConsumers)
+            {
+                j = 0;
+                tempFunction2 = tempGraph->parallel_functions;
+                while(tempFunction2)
+                {
+                    if(tempFunction2->id == tempConsumers->id)
+                    {
+                        if(tred_array[i][j] == TRUE)
+                        {
+                            if((*tempConsumers2) == NULL)
+                                {
+                                    (*tempConsumers2) = (producer*)malloc(sizeof(producer));
+                                    (*tempConsumers2)->id = tempConsumers->id;
+                                    (*tempConsumers2)->kernels = NULL;
+                                    (*tempConsumers2)->next = NULL;
+                                }
+                                else
+                                {
+                                    tempConsumers3 = tempFunction->tred_consumers;
+                                    while(tempConsumers3 && tempConsumers3->next)
+                                        tempConsumers3 = tempConsumers3->next;
+                                    
+                                    tempConsumers3->next = (producer*)malloc(sizeof(producer));
+                                    tempConsumers3->next->id = tempConsumers->id;
+                                    tempConsumers3->next->kernels = NULL;
+                                    tempConsumers3->next->next = NULL;
+                                }
+                            break;
+                        }
+                    }
+                    j++;
+                    tempFunction2 = tempFunction2->next;
+                }
+                tempConsumers = tempConsumers->next;
+            }
+            i++;
+            tempFunction = tempFunction->next;
+        }
+            
+            
+                    
+        free(tred_array);
+        taskCounter = 0;
 		tempFunction = tempGraph->parallel_functions;
 		while(tempFunction)
-		{			
+		{	
+            
 			/** Take care of functions tasks **/
 			
 			// Counter how many tasks there are in a function -- to allocate the tred_consumer_array[TASKS][TASKS]

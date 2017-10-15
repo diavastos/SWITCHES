@@ -148,11 +148,64 @@ void printSG(SG** Graph, int printSGFlag){
 				fprintf(SGlogFile, "%s]\n", "none");
 			else if(tempFunction->defaultVarsState == DEFAULT_SHARED)
 				fprintf(SGlogFile, "%s]\n", "shared");
+                
+                
+            
+            /* Print Producers/Consumers of a Parallel Function */
+            
+            fprintf(SGlogFile, "\t\t   [+] Producers: ( ");
+            tempProducer = tempFunction->producers;
+            while(tempProducer)
+            {
+                fprintf(SGlogFile, "p%d", tempProducer->id);
+                tempProducer = tempProducer->next;
+                if(tempProducer)
+                    fprintf(SGlogFile, ", ");
+            }
+            fprintf(SGlogFile, " )\n");
+            
+            
+            fprintf(SGlogFile, "\t\t   [+] Consumers: ( ");
+            tempConsumer = tempFunction->consumers;
+            while(tempConsumer)
+            {
+                fprintf(SGlogFile, "p%d", tempConsumer->id);
+                tempConsumer = tempConsumer->next;
+                if(tempConsumer)
+                    fprintf(SGlogFile, ", ");
+            }
+            fprintf(SGlogFile, " )\n");
+            
+            
+            fprintf(SGlogFile, "\t\t   [+] tred_producers: ( ");
+            tempProducer = tempFunction->tred_producers;
+            while(tempProducer)
+            {
+                fprintf(SGlogFile, "p%d", tempProducer->id);
+                tempProducer = tempProducer->next;
+                if(tempProducer)
+                    fprintf(SGlogFile, ", ");
+            }
+            fprintf(SGlogFile, " )\n");
+            
+            
+            fprintf(SGlogFile, "\t\t   [+] tred_consumers: ( ");
+            tempConsumer = tempFunction->tred_consumers;
+            while(tempConsumer)
+            {
+                fprintf(SGlogFile, "p%d", tempConsumer->id);
+                tempConsumer = tempConsumer->next;
+                if(tempConsumer)
+                    fprintf(SGlogFile, ", ");
+            }
+            fprintf(SGlogFile, " )\n");            
+        
+                
+                
 			
 			/* Print Variables lists of a function */
 			
 			fprintf(SGlogFile, "\n\t\t   [+] Function Variables Lists: \n");
-			
 			
 			// Print Function Private List
 			tempList = tempFunction->privateList;
@@ -333,6 +386,119 @@ void printSG(SG** Graph, int printSGFlag){
 					tempList = tempList->next;
 				}
 			}
+            
+            /* Print Parallel Function Dependencies  */
+            
+            fprintf(SGlogFile, "\n\t\t   [+] Function Dependencies: \n");
+            
+            
+            // Print Task DependIn List
+            tempList = tempFunction->dependInList;
+            if(tempList)
+            {
+                fprintf(SGlogFile, "\t\t\t[*] DependIn List: \n");
+                fprintf(SGlogFile, "\t\t\t\tName \t\tType \t\tIndexes \n");
+                while(tempList)
+                {
+                    fprintf(SGlogFile, "\t\t\t\t%s \t\t%s \t\t", tempList->variableName, tempList->variableType);
+                    
+                    tempIndexes = tempList->indexes;
+                    if(!tempIndexes)
+                        fprintf(SGlogFile, "(none)");
+                        
+                    while(tempIndexes)
+                    {
+                        if(tempIndexes->start.localInt != -1)
+                            fprintf(SGlogFile, "[%d", tempIndexes->start.localInt);
+                        else if(tempIndexes->start.localStr)
+                            fprintf(SGlogFile, "[%s", tempIndexes->start.localStr);
+                        
+                        if(tempIndexes->end.localInt != -1)
+                            fprintf(SGlogFile, ":%d]", tempIndexes->end.localInt);
+                        else if(tempIndexes->end.localStr)
+                            fprintf(SGlogFile, ":%s]", tempIndexes->end.localStr);
+                        else
+                            fprintf(SGlogFile, "]");
+                            
+                        tempIndexes = tempIndexes->next;
+                    }
+                    fprintf(SGlogFile, "\n");							
+                    
+                    tempList = tempList->next;
+                }
+            }
+            
+            // Print Task DependOut List
+            tempList = tempFunction->dependOutList;
+            if(tempList)
+            {
+                fprintf(SGlogFile, "\t\t\t[*] DependOut List: \n");
+                fprintf(SGlogFile, "\t\t\t\tName \t\tType \t\tIndexes \n");
+                while(tempList)
+                {
+                    fprintf(SGlogFile, "\t\t\t\t%s \t\t%s \t\t", tempList->variableName, tempList->variableType);
+                    
+                    tempIndexes = tempList->indexes;
+                    if(!tempIndexes)
+                        fprintf(SGlogFile, "(none)");
+                        
+                    while(tempIndexes)
+                    {
+                        if(tempIndexes->start.localInt != -1)
+                            fprintf(SGlogFile, "[%d", tempIndexes->start.localInt);
+                        else if(tempIndexes->start.localStr)
+                            fprintf(SGlogFile, "[%s", tempIndexes->start.localStr);
+                        
+                        if(tempIndexes->end.localInt != -1)
+                            fprintf(SGlogFile, ":%d]", tempIndexes->end.localInt);
+                        else if(tempIndexes->end.localStr)
+                            fprintf(SGlogFile, ":%s]", tempIndexes->end.localStr);
+                        else
+                            fprintf(SGlogFile, "]");
+                            
+                        tempIndexes = tempIndexes->next;
+                    }
+                    fprintf(SGlogFile, "\n");							
+                    
+                    tempList = tempList->next;
+                }
+            }
+            
+            // Print Task DependInOut List
+            tempList = tempFunction->dependInOutList;
+            if(tempList)
+            {
+                fprintf(SGlogFile, "\t\t\t[*] DependInOut List: \n");
+                fprintf(SGlogFile, "\t\t\t\tName \t\tType \t\tIndexes \n");
+                while(tempList)
+                {
+                    fprintf(SGlogFile, "\t\t\t\t%s \t\t%s \t\t", tempList->variableName, tempList->variableType);
+                    
+                    tempIndexes = tempList->indexes;
+                    if(!tempIndexes)
+                        fprintf(SGlogFile, "(none)");
+                        
+                    while(tempIndexes)
+                    {
+                        if(tempIndexes->start.localInt != -1)
+                            fprintf(SGlogFile, "[%d", tempIndexes->start.localInt);
+                        else if(tempIndexes->start.localStr)
+                            fprintf(SGlogFile, "[%s", tempIndexes->start.localStr);
+                        
+                        if(tempIndexes->end.localInt != -1)
+                            fprintf(SGlogFile, ":%d]", tempIndexes->end.localInt);
+                        else if(tempIndexes->end.localStr)
+                            fprintf(SGlogFile, ":%s]", tempIndexes->end.localStr);
+                        else
+                            fprintf(SGlogFile, "]");
+                            
+                        tempIndexes = tempIndexes->next;
+                    }
+                    fprintf(SGlogFile, "\n");					
+                    
+                    tempList = tempList->next;
+                }
+            }
 			
 			
 			
@@ -2024,6 +2190,10 @@ void addParallelFunctionToGraph(parallel_function **GraphFunc, int numKernels, i
 		(*GraphFunc)->tasks 			  = NULL;
 		(*GraphFunc)->kernels 			  = NULL;
 		(*GraphFunc)->sections 			  = NULL;
+        (*GraphFunc)->producers	      	  = NULL;
+		(*GraphFunc)->consumers	      	  = NULL;
+		(*GraphFunc)->tred_producers   	  = NULL;
+		(*GraphFunc)->tred_consumers   	  = NULL;
 		
 		tempList = &(*GraphFunc)->privateList;
 		tempDataList = &lists[IN_PRIVATE];
@@ -2043,6 +2213,18 @@ void addParallelFunctionToGraph(parallel_function **GraphFunc, int numKernels, i
 		
 		tempList = &(*GraphFunc)->flushList;
 		tempDataList = &lists[IN_FLUSH];
+		copyDataListToSG(tempList, tempDataList);
+        
+        tempList = &(*GraphFunc)->dependInList;
+		tempDataList = &lists[IN_DEPEND_IN];
+		copyDataListToSG(tempList, tempDataList);
+		
+		tempList = &(*GraphFunc)->dependOutList;
+		tempDataList = &lists[IN_DEPEND_OUT];
+		copyDataListToSG(tempList, tempDataList);
+		
+		tempList = &(*GraphFunc)->dependInOutList;
+		tempDataList = &lists[IN_DEPEND_INOUT];
 		copyDataListToSG(tempList, tempDataList);
 		
 		(*GraphFunc)->next 			 	  = NULL;
@@ -2079,6 +2261,18 @@ void addParallelFunctionToGraph(parallel_function **GraphFunc, int numKernels, i
 		tempList = &tempParallelFunctions->next->flushList;
 		tempDataList = &lists[IN_FLUSH];
 		copyDataListToSG(tempList, tempDataList);
+        
+        tempList = &tempParallelFunctions->next->dependInList;
+		tempDataList = &lists[IN_DEPEND_IN];
+		copyDataListToSG(tempList, tempDataList);
+        
+        tempList = &tempParallelFunctions->next->dependOutList;
+		tempDataList = &lists[IN_DEPEND_OUT];
+		copyDataListToSG(tempList, tempDataList);
+        
+        tempList = &tempParallelFunctions->next->dependInOutList;
+		tempDataList = &lists[IN_DEPEND_INOUT];
+		copyDataListToSG(tempList, tempDataList);        
 		
 		tempParallelFunctions->next->next 			 	= NULL;
 	}		

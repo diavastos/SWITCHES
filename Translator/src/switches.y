@@ -2382,6 +2382,7 @@ parallel_clause_multi:
 parallel_clause:
 		if_clause
 	|	num_threads_clause
+    |	depend_clause
 	|   copyin_clause
 	|   procbind_clause
 	|	default_clause
