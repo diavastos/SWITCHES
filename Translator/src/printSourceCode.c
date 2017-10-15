@@ -95,9 +95,14 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
                 WRITE("\t__FUNC_%d* __function_%d;\n", currentFunction, currentFunction);
                 WRITE("\t__function_%d = new __FUNC_%d(%d, %d, %d);\n", currentFunction, currentFunction, currentFunction, functionsCounter, TAOwidth);
                 
-                loop1[j]->make_edge(loop2[j]);
+                /*
+                 * 
+                 * CONTINUE FROM HERE
+                 * 
+                 * 
+                 */
                 
-                WRITE("\tgotao_push_init(__function_%d, %d %% gotao_nthreads);\n\n", currentFunction, currentFunction);
+                WRITE("\tt__function_%d->make_edge(t__function_%d)\n\n", currentFunction, currentFunction);
                 
                 
                 
