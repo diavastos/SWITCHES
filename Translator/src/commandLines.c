@@ -30,7 +30,7 @@ extern int line;
 extern int pass;
 extern bool firstPass;
 extern bool transactions;
-extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
+extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads, *outp_sw_tao_h;
 extern FILE *outp;
 extern NSGA *nsga;
 extern int  maxCores;

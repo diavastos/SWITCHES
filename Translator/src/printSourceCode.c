@@ -34,7 +34,7 @@ extern bool transactions;
 extern char	**stringFor;
 extern char **inputFiles;
 extern int totalInputFiles;
-extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
+extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads, *outp_sw_tao_h;
 extern FILE *outp;
 
 
@@ -48,12 +48,64 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
 	
 	
 	parallel_function* tempParallelFunctions = *GraphFunc;
+	parallel_function* tempFunction = *GraphFunc;
+    int functionsCounter = 0;
+    int TAOwidth = 0;
+    
 	
 	//Redirect output
 	__OUTP_IS_NOW_MAIN_FILE
 	
-	WRITE("__threadpool_initialize(__FUNCTION_%d);\n\n", currentFunction);
-
+    switch(runtimeSystem){
+        
+        case RUNTIME_STATIC:
+                WRITE("__threadpool_initialize(__FUNCTION_%d);\n\n", currentFunction);
+                break;
+        case RUNTIME_TAO:
+                break;
+        case RUNTIME_TAOSW:
+        
+                // Count total number of parallel functions (TAOs)
+                functionsCounter = 0;
+                tempFunction = *GraphFunc;
+                while(tempFunction)
+                {
+                    functionsCounter++;
+                    tempFunction = tempFunction->next;
+                }
+                
+                // Find the width of a TAO == number of kernels that will execute the parallel function
+                tempFunction = *GraphFunc;
+                while(tempFunction)
+                {
+                    if(tempFunction->id == currentFunction){
+                        TAOwidth = tempFunction->number_of_kernels;
+                        break;
+                    }                        
+                    tempFunction = tempFunction->next;
+                }
+                
+                if(currentFunction == 1){
+                    WRITE("\t%s\n", "/***** 	START TAOs *****/");
+                    WRITE("\t%s\n", "PolyTask *st1;");                    
+                    WRITE("\t%s\n\n", "gotao_init();");                    
+                    WRITE("\t%s\n", "/***** 	LOAD TAOs *****/");
+                }
+        
+                WRITE("\t__FUNC_%d* __function_%d;\n", currentFunction, currentFunction);
+                WRITE("\t__function_%d = new __FUNC_%d(%d, %d, %d);\n", currentFunction, currentFunction, currentFunction, functionsCounter, TAOwidth);
+                WRITE("\tgotao_push_init(__function_%d, %d %% gotao_nthreads);\n\n", currentFunction, currentFunction);
+                
+                if(currentFunction == functionsCounter){
+                    WRITE("\n\t%s\n\n", "gotao_start();");
+                    WRITE("\t%s\n\n", "gotao_fini();");                    
+                }
+                break;
+                
+        default:
+                ERROR_COMMANDS("Runtime System [ %d ] not recognized!", runtimeSystem)
+                exit(-1);
+    }
 }
 
 
@@ -221,25 +273,26 @@ void printInSwFile(SG** Graph){
 	
 
 	/* Print Threadpool Function Prototypes */
-	
-	WRITE("%s", "/********************** Threadpool Function Prototypes ************************/\n\n");
-	WRITE("%s", "pthread_t __kernels[__PTHREADS];\n");
-	i = 1;
-	tempGraph = *Graph;
-	while(tempGraph)
-	{
-		tempFunction = tempGraph->parallel_functions;
-		while(tempFunction)
-		{	
-			i++;
-			tempFunction = tempFunction->next;
-		}
-		tempGraph = tempGraph->next;
-	}
-	WRITE("pthread_barrier_t barrier[%d];                   // # of functions + 1 (for the entire thread_jobs)\n\n", i);
-	WRITE("%s", "void __threadpool_initialize(int);\n");
-	WRITE("%s", "void __threadpool_destroy();\n");
-	WRITE("%s", "\n\n");
+	if(runtimeSystem == RUNTIME_STATIC){
+        WRITE("%s", "/********************** Threadpool Function Prototypes ************************/\n\n");
+        WRITE("%s", "pthread_t __kernels[__PTHREADS];\n");
+        i = 1;
+        tempGraph = *Graph;
+        while(tempGraph)
+        {
+            tempFunction = tempGraph->parallel_functions;
+            while(tempFunction)
+            {	
+                i++;
+                tempFunction = tempFunction->next;
+            }
+            tempGraph = tempGraph->next;
+        }
+        WRITE("pthread_barrier_t barrier[%d];                   // # of functions + 1 (for the entire thread_jobs)\n\n", i);
+        WRITE("%s", "void __threadpool_initialize(int);\n");
+        WRITE("%s", "void __threadpool_destroy();\n");
+        WRITE("%s", "\n\n");
+    }
 	
 
 
@@ -2107,6 +2160,85 @@ void printInThreadsFile_BreakLoopWhenFinished(parallel_function **GraphFunc, int
         WRITE("%s", "        if(!__sw_tasksCounter) break;\n");
     }
 }
+
+
+
+/*********************** Print in [ sw_tao.cxx ] file ****************************/
+
+
+void printInTaoFile(SG** Graph){
+	
+	int 				i = 0, j = 0;
+	SG 					*tempGraph = *Graph;
+	parallel_function 	*tempFunction;
+	//task 				*tempTask;
+   // section             *tempSection;
+   // kernel              *tempKernel;
+	
+	//Redirect output
+	__OUTP_IS_NOW_SW_TAO_FILE
+    
+    
+    if(runtimeSystem == RUNTIME_TAOSW)
+    {
+        WRITE("%s", "#include \"tao.h\"\n");
+        WRITE("%s", "extern \"C\" {\n");
+        WRITE("%s", "#include \"sw.h\"\n");
+        WRITE("%s", "}\n");
+        WRITE("%s", "using namespace std;\n\n");
+    }
+	
+	
+    /* Print Parallel Functions - Classes */
+    
+    tempGraph = *Graph;
+	while(tempGraph)
+	{
+		tempFunction = tempGraph->parallel_functions;
+		while(tempFunction)
+		{	
+             WRITE("/** Parallel Function %d **/ \n", tempFunction->id);
+             
+             WRITE("class __FUNC_%d : public AssemblyTask\n", tempFunction->id);
+             WRITE("%s\n", "{");
+             WRITE("\t%s\n", "public:");
+             WRITE("\t\t__FUNC_%d(int tao, int taos, int width) : AssemblyTask(width)\n", tempFunction->id);
+             WRITE("\t\t%s\n", "{");
+             WRITE("\t\t\t%s\n", "#define PSLACK 8");
+             WRITE("\t\t\t%s\n", "noTaos = taos;");
+             WRITE("\t\t\t%s\n", "taoID = tao;");
+             WRITE("\t\t%s\n\n", "}");
+             
+             
+             WRITE("\t\t%s\n\n", "int cleanup(){}");
+             
+             
+             WRITE("\t\t%s\n", "// this assembly can work totally asynchronously");
+             WRITE("\t\t%s\n", "int execute(int threadid)");
+             WRITE("\t\t%s\n", "{");
+             WRITE("\t\t\t%s\n", "int tid = threadid - leader;");
+             WRITE("\t\t\t%s\n", "//int tid = taoID*width + threadid - leader;");
+             WRITE("\t\t\t%s\n", "__arguments *arguments;");
+             WRITE("\t\t\t%s\n", "arguments = (__arguments*)malloc(sizeof(__arguments));");
+             WRITE("\t\t\t%s\n", "arguments->id = tid;");
+             WRITE("\t\t\targuments->function_id = %d;\n", tempFunction->id);
+             WRITE("\t\t\t%s\n", "thread_jobs((void *)arguments);");
+             WRITE("\t\t%s\n", "}");
+             
+             
+             WRITE("\t\t%s\n", "int noTaos;");
+             WRITE("\t\t%s\n", "int taoID;");
+             WRITE("%s\n", "};");
+             WRITE("%s", "\n\n");
+            
+			 tempFunction = tempFunction->next;
+		}
+		tempGraph = tempGraph->next;
+	}
+    
+    
+}
+
 
 
 

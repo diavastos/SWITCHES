@@ -50,7 +50,7 @@
     bool transactions 	= FALSE;
     
     
-	FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
+	FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads, *outp_sw_tao_h;
 	FILE *outp;
 	
 	// Local variables
@@ -3009,14 +3009,26 @@ int main(int argc, char *argv[]){
 		            exit(-1);
 		        }
 		        bzero(outputFile, sizeof(outputFile));
-		        sprintf(outputFile, "sw_%s", inputFiles[currentFile]);
+		        
+                if(runtimeSystem == RUNTIME_TAO || runtimeSystem == RUNTIME_TAOSW){
+                    sprintf(outputFile, "sw_%sxx", inputFiles[currentFile]);
+                }
+                else{
+                    sprintf(outputFile, "sw_%s", inputFiles[currentFile]);
+                }                
+		        
 		        outp_sw_main = fopen(outputFile, "w");
 		        if(!outp_sw_main){
 		            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
 		            exit(-1);
 		        }
 		        __OUTP_IS_NOW_MAIN_FILE
-		        WRITE("%s", "#include \"sw.h\"\n");
+                if(runtimeSystem == RUNTIME_STATIC){
+                    WRITE("%s", "#include \"sw.h\"\n");
+                }
+                else{
+                    WRITE("%s", "#include \"sw_tao.h\"\n");
+                }
 			}
 	        
 	        yyin = inp;         // Set input stream to be the input file
@@ -3168,7 +3180,7 @@ int main(int argc, char *argv[]){
                         printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
                         printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
                         printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
-                        printInThreadsFile_JobsThreadsFunction_SWITCHES(&Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+                        printInThreadsFile_JobsThreadsFunction_SWITCHES(&Graph);	// Print Jobs Threads Function in [ sw_threads.c ]
 
                         break;
                         
@@ -3191,6 +3203,20 @@ int main(int argc, char *argv[]){
                         // Print source code of [ sw.h ]
                         printInSwFile(&Graph);
                         
+                        
+                        // Open [ sw_tao.h ] Output File -- TAO Classes
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw_tao.h");
+                        outp_sw_tao_h = fopen(outputFile, "w");
+                        if(!outp_sw_tao_h){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        // Print source code of [ sw_tao.h ]
+                        printInTaoFile(&Graph);
+                        
+                        
                         // Open [ sw_threads.c ] Output File
                         bzero(outputFile, sizeof(outputFile));
                         sprintf(outputFile, "sw_threads.c");
@@ -3204,7 +3230,7 @@ int main(int argc, char *argv[]){
                         printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
                         printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
                         printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
-                        printInThreadsFile_JobsThreadsFunction_TAOSW(&Graph);				// Print Jobs Threads Function in [ sw_threads.c ]
+                        printInThreadsFile_JobsThreadsFunction_TAOSW(&Graph);		// Print Jobs Threads Function in [ sw_threads.c ]
                 
                         break;
                 

@@ -31,7 +31,7 @@ extern bool transactions;
 extern char **inputFiles;
 extern char *schedulingInputFile;
 extern int totalInputFiles;
-extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
+extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads, *outp_sw_tao_h;
 extern int      maxCores;
 extern int      hThreads;
 extern int      OSthread;
