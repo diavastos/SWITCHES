@@ -49,6 +49,8 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
 	
 	parallel_function* tempParallelFunctions = *GraphFunc;
 	parallel_function* tempFunction = *GraphFunc;
+    producer*          tempConsumer;
+    producer*          tempProducer;
     int functionsCounter = 0;
     int TAOwidth = 0;
     
@@ -74,39 +76,60 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
                     tempFunction = tempFunction->next;
                 }
                 
-                // Find the width of a TAO == number of kernels that will execute the parallel function
+        
+                if(currentFunction == 1){
+                    
+                    WRITE("\t%s\n", "/***** 	Start TAOs *****/");
+                    WRITE("\t%s\n", "PolyTask *st1;");                    
+                    WRITE("\t%s\n\n", "gotao_init();"); 
+                    
+                                       
+                    WRITE("\t%s\n", "/***** Declare TAOs *****/");
+                    tempFunction = *GraphFunc;
+                    while(tempFunction)
+                    {                    
+                        WRITE("\t__FUNC_%d* __function_%d;\n", tempFunction->id, tempFunction->id);
+                        tempFunction = tempFunction->next;
+                    }
+                    
+                    WRITE("\n\t%s\n", "/***** Allocate TAOs *****/");                    
+                    tempFunction = *GraphFunc;
+                    while(tempFunction)
+                    {
+                        WRITE("\t__function_%d = new __FUNC_%d(%d, %d, %d);\n", tempFunction->id, tempFunction->id, tempFunction->id, functionsCounter, tempFunction->number_of_kernels);
+                        tempFunction = tempFunction->next;
+                    }
+                    
+                    WRITE("\n\t%s\n", "/***** 	Declare TAO Dependencies *****/");
+                    tempFunction = *GraphFunc;
+                    while(tempFunction)
+                    {       
+                        tempConsumer = tempFunction->tred_consumers;
+                        while(tempConsumer)
+                        {
+                            WRITE("\t__function_%d->make_edge(__function_%d);\n", tempFunction->id, tempConsumer->id);    
+                            tempConsumer = tempConsumer->next;                        
+                        }                                         
+                        tempFunction = tempFunction->next;
+                    }
+                    WRITE("%s", "\n");
+                }
+                
+                
                 tempFunction = *GraphFunc;
                 while(tempFunction)
                 {
                     if(tempFunction->id == currentFunction){
-                        TAOwidth = tempFunction->number_of_kernels;
+                        tempProducer = tempFunction->producers;
+                        if(!tempProducer)
+                        {
+                            WRITE("\tgotao_push_init(__function_%d, %d %% gotao_nthreads);\n", currentFunction, currentFunction);
+                        }
                         break;
-                    }                        
+                    }
                     tempFunction = tempFunction->next;
                 }
                 
-                if(currentFunction == 1){
-                    WRITE("\t%s\n", "/***** 	START TAOs *****/");
-                    WRITE("\t%s\n", "PolyTask *st1;");                    
-                    WRITE("\t%s\n\n", "gotao_init();");                    
-                    WRITE("\t%s\n", "/***** 	LOAD TAOs *****/");
-                }
-        
-                WRITE("\t__FUNC_%d* __function_%d;\n", currentFunction, currentFunction);
-                WRITE("\t__function_%d = new __FUNC_%d(%d, %d, %d);\n", currentFunction, currentFunction, currentFunction, functionsCounter, TAOwidth);
-                
-                /*
-                 * 
-                 * CONTINUE FROM HERE
-                 * 
-                 * 
-                 */
-                
-                WRITE("\tt__function_%d->make_edge(t__function_%d)\n\n", currentFunction, currentFunction);
-                
-                
-                
-                WRITE("\tgotao_push_init(__function_%d, %d %% gotao_nthreads);\n\n", currentFunction, currentFunction);
                 
                 if(currentFunction == functionsCounter){
                     WRITE("\n\t%s\n\n", "gotao_start();");
@@ -2238,13 +2261,13 @@ void printInTaoFile(SG** Graph){
              WRITE("\t\t%s\n", "{");
              WRITE("\t\t\t%s\n", "int tid = threadid - leader;");
              WRITE("\t\t\t%s\n", "//int tid = taoID*width + threadid - leader;");
-             WRITE("\t\t\tfprintf(stderr, \"FUNC_%d: threadid: %%d - leader: %%d - taoID: %%d - tid:%%d -- IN\\n\", threadid, leader, taoID, tid);\n", tempFunction->id);
+             WRITE("\t\t\t//fprintf(stderr, \"FUNC_%d: threadid: %%d - leader: %%d - taoID: %%d - tid:%%d -- IN\\n\", threadid, leader, taoID, tid);\n", tempFunction->id);
              WRITE("\t\t\t%s\n", "__arguments *arguments;");
              WRITE("\t\t\t%s\n", "arguments = (__arguments*)malloc(sizeof(__arguments));");
              WRITE("\t\t\t%s\n", "arguments->id = tid;");
              WRITE("\t\t\targuments->function_id = %d;\n", tempFunction->id);
              WRITE("\t\t\t%s\n", "thread_jobs((void *)arguments);");
-             WRITE("\t\t\tfprintf(stderr, \"FUNC_%d: threadid: %%d - leader: %%d - taoID: %%d - tid:%%d -- OUT\\n\", threadid, leader, taoID, tid);\n", tempFunction->id);
+             WRITE("\t\t\t//fprintf(stderr, \"FUNC_%d: threadid: %%d - leader: %%d - taoID: %%d - tid:%%d -- OUT\\n\", threadid, leader, taoID, tid);\n", tempFunction->id);
              WRITE("\t\t%s\n", "}");
              
              
