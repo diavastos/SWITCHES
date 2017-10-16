@@ -83,7 +83,7 @@ void printHelp(){
     printf("\n");
     
     printf(ANSI_COLOR_MAGENTA "\t   * [-r <Option>]       :" ANSI_COLOR_CYAN " static (default)\n" ANSI_COLOR_RESET);
-    printf(ANSI_COLOR_CYAN "\t                           tao \n" ANSI_COLOR_RESET);
+    printf(ANSI_COLOR_CYAN "\t                           tao               (NOT YET IMPLEMENTED)\n" ANSI_COLOR_RESET);
     printf(ANSI_COLOR_CYAN "\t                           taosw \n" ANSI_COLOR_RESET);
     printf("\n");
     
