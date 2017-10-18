@@ -46,7 +46,7 @@ Usage:  ./switches -s _System_ -i _inputFiles_ -t _numberOfThreads_ [-a _Option_
 	                           random 
 
 	   * [-r <Option>]       : static (default)
-	                           tao 
+	                           tao                  (NOT YET IMPLEMENTED)
 	                           taosw 
 
 	   * [-nsga <Option>]    : -f <fileName>
