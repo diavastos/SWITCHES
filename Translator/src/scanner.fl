@@ -68,9 +68,10 @@ extern int  currentFunction;
 extern int  currentTask;
 extern int	currentFor;
 extern char **stringFor;
+extern int runtimeSystem;
 
 
-extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads;
+extern FILE *inp, *outp_sw_main, *outp_sw_h, *outp_sw_threadpool, *outp_sw_threads, *outp_sw_tao_h;
 extern FILE *outp;
 
 /* Function Prototypes */
@@ -2311,10 +2312,12 @@ static int check_type(void);
 							if(inMainFunction)
 							{
 								inMainFunction = FALSE;
-								WRITE("%s", "\n\n   /* Parallel sections is finished -- Destroy threadpool */\n");
-								WRITE("%s", "   __threadpool_initialize(-1);\n");
-								WRITE("%s", "   __threadpool_destroy();\n");
-								WRITE("%s", "   pthread_exit(NULL);\n\n");
+                                if(runtimeSystem == RUNTIME_STATIC){
+                                    WRITE("%s", "\n\n   /* Parallel sections is finished -- Destroy threadpool */\n");
+                                    WRITE("%s", "   __threadpool_initialize(-1);\n");
+                                    WRITE("%s", "   __threadpool_destroy();\n");
+                                    WRITE("%s", "   pthread_exit(NULL);\n\n");
+                                }
 								WRITE("%s", yytext); 
 							}
 							else

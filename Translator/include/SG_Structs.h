@@ -160,6 +160,15 @@ typedef struct parallel_function{
 	dataList*					sharedList;
 	dataList*					copyInList;
 	dataList*					flushList;					// A list of all variables that are to be flushed at the end of the parallel function
+    
+    dataList*			        dependInList;			    // A list of all depend-in varialbes -- TAOSW additions
+	dataList*			        dependOutList;				// A list of all depend-out varialbes -- TAOSW additions
+	dataList*			        dependInOutList;			// A list of all depend-inout varialbes -- TAOSW additions
+    
+    producer* 			        producers;					// The original producers of a parallel function -- TAOSW additions
+	producer* 			        consumers;					// The original consumers of a parallel function -- TAOSW additions
+	producer* 			        tred_producers;				// The transitive recuction producers of a parallel function -- TAOSW additions
+	producer* 			        tred_consumers;				// The transitive recuction consumers of a parallel function -- TAOSW additions
 	
 	struct parallel_function* 	next;
 	

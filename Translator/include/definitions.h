@@ -181,6 +181,7 @@
 
 #define __OUTP_IS_NOW_STDOUT outp = stdout;
 #define __OUTP_IS_NOW_SW_FILE outp = outp_sw_h;
+#define __OUTP_IS_NOW_SW_TAO_FILE outp = outp_sw_tao_h;
 #define __OUTP_IS_NOW_MAIN_FILE outp = outp_sw_main;
 #define __OUTP_IS_NOW_THREADS_FILE outp = outp_sw_threads;
 #define __OUTP_IS_NOW_THREADPOOL_FILE outp = outp_sw_threadpool;
