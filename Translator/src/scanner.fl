@@ -3357,9 +3357,12 @@ static int check_type(void);
 											{
 												if(inParallelFor)
 												{
-													printInThreadsFile_TurnSwitchesOn(&Graph->parallel_functions, currentFunction-1, currentTask-1);
-													WRITE("%s", "\n    }\n");				// End of a task
-                                                    WRITE("%s", "       if(!__sw_tasksCounter) break;\n");
+                                                    if(runtimeSystem != RUNTIME_TAO){
+													
+                                                        printInThreadsFile_TurnSwitchesOn(&Graph->parallel_functions, currentFunction-1, currentTask-1);
+                                                        WRITE("%s", "\n    }\n");				// End of a task
+                                                        WRITE("%s", "       if(!__sw_tasksCounter) break;\n");
+                                                    }
 													inParallelFor = FALSE;
 												}
 												
@@ -3368,15 +3371,19 @@ static int check_type(void);
 												// NEW UPDATE DOESNT NEED THIS FUNCTION -- CONTROL GOES IN THE WHILE LOOP WITH while()
 												//printInThreadsFile_BreakLoopWhenFinished(&Graph->parallel_functions, currentFunction-1);
 												
-												WRITE("%s", "\n\n    }while(__sw_tasksCounter);\n");
-												WRITE("%s", "\n}\n\n");								// End of a parallel function
+                                                if(runtimeSystem != RUNTIME_TAO){
+                                                    WRITE("%s", "\n\n    }while(__sw_tasksCounter);\n");
+                                                }
+                                                WRITE("%s", "\n}\n\n");								// End of a parallel function
 												__OUTP_IS_NOW_MAIN_FILE
 											}
 											else
 											{
-												printInThreadsFile_TurnSwitchesOn(&Graph->parallel_functions, currentFunction-1, currentTask-1);
-												WRITE("%s", "\n    }\n");				// End of a task
-                                                WRITE("%s", "       if(!__sw_tasksCounter) break;\n\n");
+                                                if(runtimeSystem != RUNTIME_TAO){
+                                                    printInThreadsFile_TurnSwitchesOn(&Graph->parallel_functions, currentFunction-1, currentTask-1);
+                                                    WRITE("%s", "\n    }\n");				// End of a task
+                                                    WRITE("%s", "       if(!__sw_tasksCounter) break;\n\n");
+                                                }
 											}
 										}
 										else

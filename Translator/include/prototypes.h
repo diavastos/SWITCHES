@@ -39,9 +39,11 @@ void printInThreadsFile_headerSourceCode(SG** );									/* Print the header sou
 void printInThreadsFile_SwitchesDeclaration(SG**);									/* Print switches in threads files */
 void printInThreadsFile_ResetSwitchesFunctions(SG**);								/* Print Reset Switches Functions in [ sw_threads.c ] */
 void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG**);							/* Print the Jobs Thread Function in [ sw_threads.c ] for SWITCHES */
-void printInThreadsFile_JobsThreadsFunction_TAOSW(SG**);							/* Print the Jobs Thread Function in [ sw_threads.c ] for TAOSW */
+void printInThreadsFile_JobsThreadsFunction_TAO(SG**);							/* Print the Jobs Thread Function in [ sw_threads.c ] for TAOSW */
 void printInThreadsFile_ParallelFunctionsHeader(parallel_function**, int);			/* Print Parallel Functions Header in [ sw_threads.c ] */
+void printInThreadsFile_ParallelFunctionsHeader_TAO(parallel_function**, int);			/* Print Parallel Functions Header in [ sw_threads.c ] */
 void printInThreadsFile_TaskSourceCode(parallel_function **, int, int);				/* Print the source code of task in a parallel function in [ sw_threads.c ] */
+void printInThreadsFile_TaskSourceCode_TAO(parallel_function **, int, int);				/* Print the source code of task in a parallel function in [ sw_threads.c ] */
 void printInThreadsFile_TurnSwitchesOn(parallel_function **, int, int);				/* Print the turn ON switches for each task in [ sw_threads.c ] */
 void printInThreadsFile_BreakLoopWhenFinished(parallel_function **, int);			/* Print the break from the infinite loop of each parallel function in [ sw_threads.c ] */
 void printInThreadsFile_ForStatement();												/* Print the FOR (...) statement */

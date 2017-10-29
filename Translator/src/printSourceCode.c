@@ -64,7 +64,6 @@ void printInMainFile_ParallelFunctions(parallel_function **GraphFunc, int curren
                 WRITE("__threadpool_initialize(__FUNCTION_%d);\n\n", currentFunction);
                 break;
         case RUNTIME_TAO:
-                break;
         case RUNTIME_TAOSW:
         
                 // Count total number of parallel functions (TAOs)
@@ -268,25 +267,32 @@ void printInSwFile(SG** Graph){
 	WRITE("%s", "\n\n");
 	
 	
-	/* Print General Defintions */
 	
-	WRITE("%s", "/************************** TAO Definitions *****************************/\n\n");
-	WRITE("#define GOTAO_NTHREADS  %d\n", kernels);
-	//WRITE("#define MAXTHREADS  %d\n", ????);
-	//WRITE("#define IDLE_SWITCH  %d\n", maxCores*hThreads);
-	WRITE("%s", "\n\n");
-    
     /* Print TAO + TAOSW Defintions */
+    
+    if(runtimeSystem == RUNTIME_TAO || runtimeSystem == RUNTIME_TAOSW){
+    
+        WRITE("%s", "/************************** TAO Definitions *****************************/\n\n");
+        WRITE("#define GOTAO_NTHREADS  %d\n", kernels);
+        //WRITE("#define MAXTHREADS  %d\n", ????);
+        //WRITE("#define IDLE_SWITCH  %d\n", maxCores*hThreads);
+        WRITE("%s", "\n\n");
+    }
+    
+    
+    /* Print General Defintions */
+    
+    if(runtimeSystem != RUNTIME_TAO){
 	
-	WRITE("%s", "/************************** TAO Definitions *****************************/\n\n");
-	WRITE("#define __KERNELS  %d\n", kernels);
-	WRITE("%s", "#define __PTHREADS (__KERNELS-1)\n");
-	WRITE("%s", "#define __ON       1\n");
-	WRITE("%s", "#define __OFF      0\n");
-	WRITE("%s", "#define TRUE       1\n");
-	WRITE("%s", "#define FALSE      0\n");
-	WRITE("%s", "\n\n");
-	
+        WRITE("%s", "/************************** General Definitions *****************************/\n\n");
+        WRITE("#define __KERNELS  %d\n", kernels);
+        WRITE("%s", "#define __PTHREADS (__KERNELS-1)\n");
+        WRITE("%s", "#define __ON       1\n");
+        WRITE("%s", "#define __OFF      0\n");
+        WRITE("%s", "#define TRUE       1\n");
+        WRITE("%s", "#define FALSE      0\n");
+        WRITE("%s", "\n\n");
+	}
 	
 	/* Print Error Printing Codes */
 	
@@ -307,13 +313,15 @@ void printInSwFile(SG** Graph){
 
 	/* Print Kernel Declaration */
 	
-	WRITE("%s", "/************************ Declare all the KERNELS here ************************/\n\n");
-	WRITE("%s", "#define __MAIN_KERNEL 0\n");
-	for(i = 1; i < kernels; i++)
-		WRITE("#define __KERNEL_%d    %d\n", i, i);
-		
-	WRITE("%s", "\n\n");
-	
+    if(runtimeSystem != RUNTIME_TAO){
+    
+        WRITE("%s", "/************************ Declare all the KERNELS here ************************/\n\n");
+        WRITE("%s", "#define __MAIN_KERNEL 0\n");
+        for(i = 1; i < kernels; i++)
+            WRITE("#define __KERNEL_%d    %d\n", i, i);
+            
+        WRITE("%s", "\n\n");
+    }
 
 	/* Print Threadpool Function Prototypes */
 	if(runtimeSystem == RUNTIME_STATIC){
@@ -351,87 +359,90 @@ void printInSwFile(SG** Graph){
 	
 	
 	/* Declare Loop Chunk Sizes */
+    
+    if(runtimeSystem != RUNTIME_TAO){
 	
-	WRITE("%s", "/************************** Declare Loop Chunk Sizes **************************/\n\n");
-	tempGraph = *Graph;
-	while(tempGraph)
-	{
-		tempFunction = tempGraph->parallel_functions;
-		while(tempFunction)
-		{	
-			tempTask = tempFunction->tasks;
-			while(tempTask)
-			{
-				if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
-				{
-					if(tempTask->chunkSize.localInt)
-					{
-						WRITE("#define __LOOP_%d_CHUNK    %d\n", tempTask->id, tempTask->chunkSize.localInt);
-					}
-					else
-					{
-						WRITE("#define __LOOP_%d_CHUNK    %s\n", tempTask->id, tempTask->chunkSize.localStr);
-					}
-				}
-				tempTask = tempTask->next;			
-			}
-			tempFunction = tempFunction->next;
-		}
-		tempGraph = tempGraph->next;
-	}
-	WRITE("%s", "\n\n");
-	
-	
-	
-	/* Declare Loop Kernel Number */
-	
-	WRITE("%s", "/************************** Declare Loop Kernel Number **************************/\n\n");
-	tempGraph = *Graph;
-	while(tempGraph)
-	{
-		tempFunction = tempGraph->parallel_functions;
-		while(tempFunction)
-		{	
-			tempTask = tempFunction->tasks;
-			while(tempTask)
-			{
-				if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
-				{
-					WRITE("#define __LOOP_%d_KERNELS    %d\n", tempTask->id, tempTask->number_of_kernels);
-				}
-				tempTask = tempTask->next;			
-			}
-			tempFunction = tempFunction->next;
-		}
-		tempGraph = tempGraph->next;
-	}
-	WRITE("%s", "\n\n");
-	
-	
-	
-	/* Declare Loop Counters */
-	
-	WRITE("%s", "/************************** Declare Loop Counters **************************/\n\n");
-	tempGraph = *Graph;
-	while(tempGraph)
-	{
-		tempFunction = tempGraph->parallel_functions;
-		while(tempFunction)
-		{	
-			tempTask = tempFunction->tasks;
-			while(tempTask)
-			{
-				if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
-				{
-					WRITE("#define __LOOP_%d_COUNTER    (__LOOP_%d_CHUNK * __LOOP_%d_KERNELS)\n", tempTask->id, tempTask->id, tempTask->id);
-				}
-				tempTask = tempTask->next;			
-			}
-			tempFunction = tempFunction->next;
-		}
-		tempGraph = tempGraph->next;
-	}
-	WRITE("%s", "\n\n");
+        WRITE("%s", "/************************** Declare Loop Chunk Sizes **************************/\n\n");
+        tempGraph = *Graph;
+        while(tempGraph)
+        {
+            tempFunction = tempGraph->parallel_functions;
+            while(tempFunction)
+            {	
+                tempTask = tempFunction->tasks;
+                while(tempTask)
+                {
+                    if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+                    {
+                        if(tempTask->chunkSize.localInt)
+                        {
+                            WRITE("#define __LOOP_%d_CHUNK    %d\n", tempTask->id, tempTask->chunkSize.localInt);
+                        }
+                        else
+                        {
+                            WRITE("#define __LOOP_%d_CHUNK    %s\n", tempTask->id, tempTask->chunkSize.localStr);
+                        }
+                    }
+                    tempTask = tempTask->next;			
+                }
+                tempFunction = tempFunction->next;
+            }
+            tempGraph = tempGraph->next;
+        }
+        WRITE("%s", "\n\n");
+        
+        
+        
+        /* Declare Loop Kernel Number */
+        
+        WRITE("%s", "/************************** Declare Loop Kernel Number **************************/\n\n");
+        tempGraph = *Graph;
+        while(tempGraph)
+        {
+            tempFunction = tempGraph->parallel_functions;
+            while(tempFunction)
+            {	
+                tempTask = tempFunction->tasks;
+                while(tempTask)
+                {
+                    if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+                    {
+                        WRITE("#define __LOOP_%d_KERNELS    %d\n", tempTask->id, tempTask->number_of_kernels);
+                    }
+                    tempTask = tempTask->next;			
+                }
+                tempFunction = tempFunction->next;
+            }
+            tempGraph = tempGraph->next;
+        }
+        WRITE("%s", "\n\n");
+        
+        
+        
+        /* Declare Loop Counters */
+        
+        WRITE("%s", "/************************** Declare Loop Counters **************************/\n\n");
+        tempGraph = *Graph;
+        while(tempGraph)
+        {
+            tempFunction = tempGraph->parallel_functions;
+            while(tempFunction)
+            {	
+                tempTask = tempFunction->tasks;
+                while(tempTask)
+                {
+                    if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+                    {
+                        WRITE("#define __LOOP_%d_COUNTER    (__LOOP_%d_CHUNK * __LOOP_%d_KERNELS)\n", tempTask->id, tempTask->id, tempTask->id);
+                    }
+                    tempTask = tempTask->next;			
+                }
+                tempFunction = tempFunction->next;
+            }
+            tempGraph = tempGraph->next;
+        }
+        WRITE("%s", "\n\n");
+    }
 	
 	
 	
@@ -457,19 +468,24 @@ void printInSwFile(SG** Graph){
 
 	WRITE("%s", "/*********************** Functions Prototypes ************************/\n\n");
 	
-	tempGraph = *Graph;
-	while(tempGraph)
-	{
-		tempFunction = tempGraph->parallel_functions;
-		while(tempFunction)
-		{	
-			WRITE("void __sw_resetSWitches_%d(int);\n", tempFunction->id);
-			tempFunction = tempFunction->next;
-		}
-		tempGraph = tempGraph->next;
-	}
+    if(runtimeSystem != RUNTIME_TAO){
+        
+        tempGraph = *Graph;
+        while(tempGraph)
+        {
+            tempFunction = tempGraph->parallel_functions;
+            while(tempFunction)
+            {	
+                WRITE("void __sw_resetSWitches_%d(int);\n", tempFunction->id);
+                tempFunction = tempFunction->next;
+            }
+            tempGraph = tempGraph->next;
+        }
+    }
+    
 	WRITE("%s", "void *thread_jobs(void *);\n");
-	tempGraph = *Graph;
+	
+    tempGraph = *Graph;
 	while(tempGraph)
 	{
 		tempFunction = tempGraph->parallel_functions;
@@ -728,6 +744,196 @@ void printInThreadsFile_ParallelFunctionsHeader(parallel_function **GraphFunc, i
 	    
 	/* Print the start of the infinite loop */
 	WRITE("%s", "\n    do{\n\n");
+	
+}
+
+
+
+/***************** Print Header of Parallel Functions in [ sw_threads.c ] file ********************/
+
+
+void printInThreadsFile_ParallelFunctionsHeader_TAO(parallel_function **GraphFunc, int currentFunction){
+	
+	parallel_function	*tempFunction = *GraphFunc;
+	section 			*tempSection;
+	task 				*tempTask;
+	task 				*tempTask2;
+	dataList			*tempList;
+	dataList			*tempReductionList;
+	kernel				*tempKernel;
+	bool				loopTask = FALSE;
+	bool				crossLoopTask = FALSE;
+	
+	
+	//Redirect output
+	__OUTP_IS_NOW_THREADS_FILE
+	
+	
+	/* Print Application parallel functions source code */
+	
+	WRITE("%s", "\n/*** Application Parallel Function ***/\n\n");
+
+	while(tempFunction && tempFunction->next)
+		if(tempFunction->id == currentFunction)
+			break;
+		else
+			tempFunction = tempFunction->next;
+	
+	
+	if(tempFunction->id == currentFunction)
+	{
+		printInThreadsFile_ReductionVariables(tempFunction);				// Print Reduction global variables of this parallel function in [ sw_threads.c ]
+		
+		WRITE("%s", "\n\n");
+			
+		WRITE("void *parallel_function_%d(void *arg)\n", tempFunction->id);
+		WRITE("%s", "{\n");
+		WRITE("%s", "    long tid;\n");
+		//WRITE("%s", "    long vTid = 0;\n");
+		WRITE("%s", "    tid = (long)arg;\n");
+		//WRITE("%s", "    bool ready = FALSE;\n");
+		//WRITE("    long __sw_tasksCounter = __sw_taskCounter_Function_%d[tid];\n", tempFunction->id);
+	
+		/*** Print Thread local Variables ***/
+		WRITE("%s", "\n    /*** Declare private/firstprivate variables ***/\n\n");
+		
+		// Print Function Private List
+		tempList = tempFunction->privateList;
+		if(tempList)
+		{
+			while(tempList)
+			{
+				WRITE("    %s %s = 0;\n", tempList->variableType, tempList->variableName);
+				tempList = tempList->next;
+			}
+		}
+        
+        // Print Function Firstprivate List
+		tempList = tempFunction->firstPrivateList;
+		if(tempList)
+		{
+			while(tempList)
+			{
+				WRITE("    %s private_%s = %s;\n", tempList->variableType, tempList->variableName, tempList->variableName);
+				WRITE("    %s %s = private_%s;\n", tempList->variableType, tempList->variableName, tempList->variableName);
+				tempList = tempList->next;
+			}
+		}
+		
+		tempTask = tempFunction->tasks;
+		while(tempTask)
+		{
+			// Print Tasks private list
+			tempList = tempTask->privateList;
+			if(tempList)
+			{
+				while(tempList)
+				{
+					WRITE("    %s %s = 0;\n", tempList->variableType, tempList->variableName);
+					tempList = tempList->next;
+				}
+			}
+            
+            // Print Tasks Firstprivate list
+			tempList = tempTask->firstPrivateList;
+			if(tempList)
+			{
+				while(tempList)
+				{
+					WRITE("    %s private_%s = %s;\n", tempList->variableType, tempList->variableName, tempList->variableName);
+					WRITE("    %s %s = private_%s;\n", tempList->variableType, tempList->variableName, tempList->variableName);
+					tempList = tempList->next;
+				}
+			}
+			
+			// Print SW loop private variables if there is at least a task that is a loop
+			if(tempTask->taskType == TASK_LOOP || tempTask->taskType == TASK_REDUCTION)
+			{
+                if(!loopTask)
+                {
+                    WRITE("%s", "    // Loop task private variables\n");
+                    WRITE("%s", "    long __sw_i               = 0;\n");
+                    WRITE("%s", "    long __sw_loop_start      = 0;\n");
+                    WRITE("%s", "    long __sw_loop_end        = 0;\n");
+                    WRITE("%s", "    long __sw_loop_chunk      = 0;\n");
+                    loopTask = TRUE;
+                }
+				
+                if(tempTask->crossLoopProducer && !crossLoopTask)
+				{
+					WRITE("%s", "    long __sw_loop_switches   = 0;\n");
+					WRITE("%s", "    long __sw_loop_switch     = 0;\n");
+					//WRITE("%s", "    long __sw_loop_kernel     = 0;\n");
+                    crossLoopTask = TRUE;
+				}
+			}
+			
+			if(tempTask->taskType == TASK_REDUCTION)
+			{
+				WRITE("%s", "    // Reduction task private variables\n");
+				tempReductionList = tempTask->reductionList;
+				while(tempReductionList)
+				{
+					WRITE("    %s %s = ", tempReductionList->variableType, tempReductionList->variableName);
+					if(!strcmp(tempReductionList->reductionType, "*") || !strcmp(tempReductionList->reductionType, "&&"))
+					{
+						WRITE("%s", "1;\n");
+					}
+					else
+					{
+						WRITE("%s", "0;\n");
+					}
+					tempReductionList = tempReductionList->next;
+				}
+			}
+			tempTask = tempTask->next;			
+		}
+		
+		tempSection = tempFunction->sections;
+		if(tempSection)
+		{
+			while(tempSection)
+			{
+				// Print Section Private List
+				tempList = tempSection->privateList;
+				if(tempList)
+				{
+					while(tempList)
+					{
+						WRITE("    %s private_%s = 0;\n", tempList->variableType, tempList->variableName);
+						tempList = tempList->next;
+					}
+				}
+                
+                // Print Section Firstprivate List
+				tempList = tempSection->firstPrivateList;
+				if(tempList)
+				{
+					while(tempList)
+					{
+						WRITE("    %s private_%s = %s;\n", tempList->variableType, tempList->variableName, tempList->variableName);
+						tempList = tempList->next;
+					}
+				}
+                
+				tempSection = tempSection->next;
+			}
+		}
+	}
+	else
+	{
+		ERROR_IN_TRANSLATOR("Function_%d not found in SG\n", currentFunction);
+		exit(-1);
+	}
+    
+    /*** ADD THIS FOR multiple executions of the same parallel function without returning to the main program ***/
+    
+    //WRITE("\n\n    __sw_resetSWitches_%d(tid);\n", currentFunction);
+    
+    /************************************************************************************************************/
+	    
+	/* Print the start of the infinite loop */
+	//WRITE("%s", "\n    do{\n\n");
 	
 }
 
@@ -1387,6 +1593,82 @@ void printInThreadsFile_TaskSourceCode(parallel_function **GraphFunc, int curren
 
 
 
+/***************** TAO: Print source code of tasks in a Parallel Function in [ sw_threads.c ] file ********************/
+
+
+void printInThreadsFile_TaskSourceCode_TAO(parallel_function **GraphFunc, int currentFunction, int currentTask){
+	
+	parallel_function	*tempFunction = *GraphFunc;
+	section 			*tempSection;
+	task 				*tempTask;
+	dataList			*tempList;
+	kernel				*tempKernel;
+	kernel				*tempKernel2;
+	kernel				*tempKernel3;
+	producer			*tempProducer;
+	int 				i = 0, temp_i = 0, cv_i = 0, flagK = 0;
+	bool				flag = FALSE;
+	bool				flag2 = FALSE;
+	crossConsumer		*tempCrossConsumer;
+    dataList			*tempReductionList;
+	
+	
+	//Redirect output
+	__OUTP_IS_NOW_THREADS_FILE
+	
+	/* Print Application parallel functions source code */
+
+	while(tempFunction && tempFunction->next)
+		if(tempFunction->id == currentFunction)
+			break;
+		else
+			tempFunction = tempFunction->next;
+
+	if(tempFunction && tempFunction->id == currentFunction)
+	{	
+		// Find the current task in the SG
+		
+		tempTask = tempFunction->tasks;
+		while(tempTask && tempTask->next)
+			if(tempTask->id == currentTask)
+				break;
+			else
+				tempTask = tempTask->next;
+		
+		// If it is a task else it is a section task
+		if(tempTask && tempTask->id == currentTask)
+		{
+			WRITE("        /******************* TASK [ %d ] *******************/\n\n", tempTask->id);
+		}
+		else
+		{
+			// If it is a section task
+			
+			tempSection = tempFunction->sections;
+			while(tempSection)
+			{
+				tempTask = tempSection->tasks;
+				while(tempTask && tempTask->next)
+					if(tempTask->id == currentTask)
+						break;
+					else
+						tempTask = tempTask->next;
+				
+				if(tempTask && tempTask->id == currentTask)
+				{
+					WRITE("        /******************* TASK [ %d ] *******************/\n\n", tempTask->id);
+					break;
+				}
+				
+				tempSection = tempSection->next;
+			}
+		}
+	}
+}
+
+
+
+
 
 /***************** Print source code of tasks in a Parallel Function in [ sw_threads.c ] file ********************/
 
@@ -1548,7 +1830,11 @@ void printInThreadsFile_JobsThreadsFunction_SWITCHES(SG** Graph){
 
 
 
-void printInThreadsFile_JobsThreadsFunction_TAOSW(SG** Graph){
+
+/***************** Print TAO + TAOSW Jobs Threads Function in [ sw_threads.c ] file ********************/
+
+
+void printInThreadsFile_JobsThreadsFunction_TAO(SG** Graph){
 	
 	SG 					*tempGraph = *Graph;
 	parallel_function 	*tempFunction;
@@ -2214,22 +2500,19 @@ void printInTaoFile(SG** Graph){
 	int 				i = 0, j = 0;
 	SG 					*tempGraph = *Graph;
 	parallel_function 	*tempFunction;
-	//task 				*tempTask;
-   // section             *tempSection;
-   // kernel              *tempKernel;
+    
 	
 	//Redirect output
 	__OUTP_IS_NOW_SW_TAO_FILE
     
     
-    if(runtimeSystem == RUNTIME_TAOSW)
-    {
-        WRITE("%s", "#include \"tao.h\"\n");
-        WRITE("%s", "extern \"C\" {\n");
-        WRITE("%s", "#include \"sw.h\"\n");
-        WRITE("%s", "}\n");
-        WRITE("%s", "using namespace std;\n\n");
-    }
+   
+    WRITE("%s", "#include \"tao.h\"\n");
+    WRITE("%s", "extern \"C\" {\n");
+    WRITE("%s", "#include \"sw.h\"\n");
+    WRITE("%s", "}\n");
+    WRITE("%s", "using namespace std;\n\n");
+    
 	
 	
     /* Print Parallel Functions - Classes */

@@ -3187,7 +3187,43 @@ int main(int argc, char *argv[]){
                         
                 case RUNTIME_TAO:
                         
-                        // Do nothing...
+                        // Open [ sw.h ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw.h");
+                        outp_sw_h = fopen(outputFile, "w");
+                        if(!outp_sw_h){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        // Print source code of [ sw.h ]
+                        printInSwFile(&Graph);
+                        
+                        
+                        // Open [ sw_tao.h ] Output File -- TAO Classes
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw_tao.h");
+                        outp_sw_tao_h = fopen(outputFile, "w");
+                        if(!outp_sw_tao_h){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        // Print source code of [ sw_tao.h ]
+                        printInTaoFile(&Graph);
+                        
+                        
+                        // Open [ sw_threads.c ] Output File
+                        bzero(outputFile, sizeof(outputFile));
+                        sprintf(outputFile, "sw_threads.c");
+                        outp_sw_threads = fopen(outputFile, "w");
+                        if(!outp_sw_threads){
+                            ERROR_COMMANDS("File [ %s ] not created!", outputFile)
+                            exit(-1);
+                        }
+                        
+                        printInThreadsFile_headerSourceCode(&Graph);				// Print header source code of [ sw_threads.c ]
+                        printInThreadsFile_JobsThreadsFunction_TAO(&Graph);		    // Print Jobs Threads Function in [ sw_threads.c ]
                         break;
                         
                 case RUNTIME_TAOSW:
@@ -3231,7 +3267,7 @@ int main(int argc, char *argv[]){
                         printInThreadsFile_SwitchesDeclaration(&Graph);				// Print switches in [ sw_threads.c ]
                         printInThreadsFile_taskCounters(&Graph);				    // Print taskCounters in [ sw_threads.c ]
                         printInThreadsFile_ResetSwitchesFunctions(&Graph);			// Print Reset Switches functions in [ sw_threads.c ]
-                        printInThreadsFile_JobsThreadsFunction_TAOSW(&Graph);		// Print Jobs Threads Function in [ sw_threads.c ]
+                        printInThreadsFile_JobsThreadsFunction_TAO(&Graph);		// Print Jobs Threads Function in [ sw_threads.c ]
                 
                         break;
                 
@@ -3253,7 +3289,8 @@ int main(int argc, char *argv[]){
                         break;
                         
                 case RUNTIME_TAO:
-                        // Close nothing...
+                        fclose(outp_sw_h);       	// Close output file [ sw.h ]
+                        fclose(outp_sw_threads);    // Close output file [ sw_threads.c ]
                         break;
                         
                 case RUNTIME_TAOSW:

@@ -18,6 +18,7 @@
 
 extern int 	line;
 extern int 	pass;
+extern int  runtimeSystem;
 extern int 	kernels;
 extern int  currentFile;
 extern bool firstPass;
@@ -193,7 +194,11 @@ void handlePragma_parallelConstruct(SG **Graph, int numKernels, int stateOfDefau
 	else if(!firstPass)
 	{
 		printInMainFile_ParallelFunctions(tempFunction, currentFunction);
-		printInThreadsFile_ParallelFunctionsHeader(tempFunction, currentFunction);	
+        
+        if(runtimeSystem != RUNTIME_TAO)
+            printInThreadsFile_ParallelFunctionsHeader(tempFunction, currentFunction);	
+        else
+            printInThreadsFile_ParallelFunctionsHeader_TAO(tempFunction, currentFunction);	
 	}
 }
 
@@ -233,7 +238,10 @@ void handlePragma_sectionDirective(SG **Graph, dataList *lists[], int currentFun
 	
 	if(!firstPass)
 	{
-		printInThreadsFile_TaskSourceCode(tempFunction, currentFunction, currentTask);
+        if(runtimeSystem != RUNTIME_TAO)
+            printInThreadsFile_TaskSourceCode(tempFunction, currentFunction, currentTask);
+        else
+            printInThreadsFile_TaskSourceCode_TAO(tempFunction, currentFunction, currentTask);
 	}
 }
 
@@ -267,6 +275,14 @@ void handlePragma_taskConstruct(SG **Graph, dataList *lists[], int type, int num
 	
 	if(!firstPass)
 	{
-		printInThreadsFile_TaskSourceCode(tempFunction, currentFunction, currentTask);
+        if(runtimeSystem != RUNTIME_TAO)
+            printInThreadsFile_TaskSourceCode(tempFunction, currentFunction, currentTask);
+        else
+            printInThreadsFile_TaskSourceCode_TAO(tempFunction, currentFunction, currentTask);
 	}
 }
+
+
+
+
+
