@@ -289,8 +289,9 @@ void recognizeCommandlineArguments(int argc, char **argv){
                           && strcmp(argv[i], "-sched")
                           && strcmp(argv[i], "-r"))
             {
-                inputFiles[j] = malloc(sizeof(char) * strlen(argv[i]));
-                strcpy(inputFiles[j], argv[i]);
+                //inputFiles[j] = malloc(sizeof(char) * strlen(argv[i]));
+                //strcpy(inputFiles[j], argv[i]);
+                inputFiles[j] = strdup(argv[i]);	// Bug fix: Memory leak
                 j++;
                 i++;
             }
@@ -614,8 +615,9 @@ void recognizeCommandlineArguments(int argc, char **argv){
             // Read the path of the application
             bzero(buff, sizeof(buff));
             strcpy(buff, argv[++i]);
-            nsga->path = (char*)malloc(sizeof(char) * strlen(buff));
-            strcpy(nsga->path, buff);
+            //nsga->path = (char*)malloc(sizeof(char) * strlen(buff));
+            //strcpy(nsga->path, buff);
+            nsga->path = strdup(buff);	// Bug fix: Memory leak
             
             assignmentPolicy = SCHED_NSGA;
             nsgaFound = TRUE;
@@ -662,9 +664,11 @@ void recognizeCommandlineArguments(int argc, char **argv){
                 }
                 
                 // Store input files
-                schedulingInputFile = malloc(sizeof(char) * strlen(argv[i])*2);
-                bzero(schedulingInputFile, sizeof(schedulingInputFile));
-                strcpy(schedulingInputFile, argv[i]);
+                //schedulingInputFile = malloc(sizeof(char) * strlen(argv[i])*2);
+                //bzero(schedulingInputFile, sizeof(schedulingInputFile));
+                //strcpy(schedulingInputFile, argv[i]);
+                schedulingInputFile = strdup(argv[i]);
+
             }
             else if(!strcmp(argv[i], "random"))
                 assignmentPolicy = SCHED_RANDOM;

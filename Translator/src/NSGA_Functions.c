@@ -114,11 +114,25 @@ void allocatePopulation(Population** population, int population_size){
 
 /********** Allocate memory of a population ***********/
 
-void deallocatePopulation(Population** population){
+// void deallocatePopulation(Population** population){
     
-    free(population);    
-}
+//     free(population);    
+// }
 
+// Memory Leak Fix
+void deallocatePopulation(Population** population){
+    Child *tempChild = (*population)->child;
+    Child *next;
+    
+    while(tempChild) {
+        next = tempChild->next;
+        free(tempChild->sched_vector);
+        free(tempChild->objectives);
+        free(tempChild);
+        tempChild = next;
+    }
+    free(*population);
+}
 
 
 /********** Get seed number for random and start it up ***********/

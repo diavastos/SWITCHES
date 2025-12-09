@@ -2724,8 +2724,9 @@ schedule_clause:
 		}
 	|	SCHEDULE '(' schedule_kind ',' IDENTIFIER ')'
 		{	
-			localintStr.localStr = (char *)malloc(sizeof(char)*strlen((char*)$5));
-			strcpy(localintStr.localStr, (char*)$5);
+			//localintStr.localStr = (char *)malloc(sizeof(char)*strlen((char*)$5));
+			//strcpy(localintStr.localStr, (char*)$5);
+			localintStr.localStr = strdup((char*)$5);	// Bug fix: Memory leak
 		}
 	//|	SCHEDULE '(' schedule_kind ',' expression ')'
 	;
@@ -3316,6 +3317,11 @@ int main(int argc, char *argv[]){
     
     printSG(&Graph, printSGFlag);
     printErrorMessages(); 
+
+	// Free stringFor array		-- Memory Leak Fix
+	for(i = 0; i < SIZE; i++)
+    	free(stringFor[i]);
+	free(stringFor);
     return 0;
     
 }

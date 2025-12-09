@@ -2295,16 +2295,18 @@ void addToIndexes(arrayIndex** indexes, int indexStartInt, int indexEndInt, char
 		
 		if(indexStartStr)
 		{
-			(*indexes)->start.localStr = (char *)malloc(sizeof(char)*strlen(indexStartStr));
-			strcpy((*indexes)->start.localStr, indexStartStr);
+			//(*indexes)->start.localStr = (char *)malloc(sizeof(char)*strlen(indexStartStr));
+			//strcpy((*indexes)->start.localStr, indexStartStr);
+			(*indexes)->start.localStr = strdup(indexStartStr);	// Bug fix: Memory leak
 		}
 		else
 			(*indexes)->start.localStr = NULL;
 		
 		if(indexEndStr)
 		{
-			(*indexes)->end.localStr = (char *)malloc(sizeof(char)*strlen(indexEndStr));
-			strcpy((*indexes)->end.localStr, indexEndStr);
+			//(*indexes)->end.localStr = (char *)malloc(sizeof(char)*strlen(indexEndStr));
+			//strcpy((*indexes)->end.localStr, indexEndStr);
+			(*indexes)->end.localStr = strdup(indexEndStr);	// Bug fix: Memory leak
 		}
 		else
 			(*indexes)->end.localStr = NULL;
@@ -2322,16 +2324,18 @@ void addToIndexes(arrayIndex** indexes, int indexStartInt, int indexEndInt, char
 		
 		if(indexStartStr)
 		{
-			tempIndexes->next->start.localStr = (char *)malloc(sizeof(char)*strlen(indexStartStr));
-			strcpy(tempIndexes->next->start.localStr, indexStartStr);
+			//tempIndexes->next->start.localStr = (char *)malloc(sizeof(char)*strlen(indexStartStr));
+			//strcpy(tempIndexes->next->start.localStr, indexStartStr);
+			tempIndexes->next->start.localStr = strdup(indexStartStr);	// Bug fix: Memory leak
 		}
 		else
 			tempIndexes->next->start.localStr = NULL;
 		
 		if(indexEndStr)
 		{
-			tempIndexes->next->end.localStr = (char *)malloc(sizeof(char)*strlen(indexEndStr));
-			strcpy(tempIndexes->next->end.localStr, indexEndStr);
+			//tempIndexes->next->end.localStr = (char *)malloc(sizeof(char)*strlen(indexEndStr));
+			//strcpy(tempIndexes->next->end.localStr, indexEndStr);
+			tempIndexes->next->end.localStr = strdup(indexEndStr);	// Bug fix: Memory leak
 		}
 		else
 			tempIndexes->next->end.localStr = NULL;
@@ -2352,21 +2356,24 @@ void addToDataList(dataList** list, char *variableName, char *variableType, char
 	if(!(*list))
 	{
 		(*list) = (dataList *)malloc(sizeof(dataList));
-		(*list)->variableName = (char *)malloc(sizeof(char)*strlen(variableName));
-		strcpy((*list)->variableName, variableName);
+		//(*list)->variableName = (char *)malloc(sizeof(char)*strlen(variableName));
+		//strcpy((*list)->variableName, variableName);
+		(*list)->variableName = strdup(variableName);	// Bug fix: Memory leak
 		
 		if(variableType)
 			{
-				(*list)->variableType = (char *)malloc(sizeof(char)*strlen(variableType));
-				strcpy((*list)->variableType, variableType);
+				//(*list)->variableType = (char *)malloc(sizeof(char)*strlen(variableType));
+				//strcpy((*list)->variableType, variableType);
+				(*list)->variableType = strdup(variableType);	// Bug fix: Memory leak
 			}
 		else
 			(*list)->variableType = NULL;
 		
 		if(reductionType)
 		{
-			(*list)->reductionType = (char *)malloc(sizeof(char)*strlen(reductionType));
-			strcpy((*list)->reductionType, reductionType);
+			//(*list)->reductionType = (char *)malloc(sizeof(char)*strlen(reductionType));
+			//strcpy((*list)->reductionType, reductionType);
+			(*list)->reductionType = strdup(reductionType);		// Bug fix: Memory leak
 		}
 		else
 			(*list)->reductionType = NULL;
@@ -2383,16 +2390,18 @@ void addToDataList(dataList** list, char *variableName, char *variableType, char
 					
 					if((*indexes)->start.localStr)
 					{
-						(*list)->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
-						strcpy((*list)->indexes->start.localStr, (*indexes)->start.localStr);
+						//(*list)->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
+						//strcpy((*list)->indexes->start.localStr, (*indexes)->start.localStr);
+						(*list)->indexes->start.localStr = strdup((*indexes)->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						(*list)->indexes->start.localStr = NULL;
 					
 					if((*indexes)->end.localStr)
 					{
-						(*list)->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
-						strcpy((*list)->indexes->end.localStr, (*indexes)->end.localStr);
+						//(*list)->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
+						//strcpy((*list)->indexes->end.localStr, (*indexes)->end.localStr);
+						(*list)->indexes->end.localStr = strdup((*indexes)->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						(*list)->indexes->end.localStr = NULL;
@@ -2411,16 +2420,18 @@ void addToDataList(dataList** list, char *variableName, char *variableType, char
 					
 					if((*indexes)->start.localStr)
 					{
-						tempIndexes->next->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
-						strcpy(tempIndexes->next->start.localStr, (*indexes)->start.localStr);
+						//tempIndexes->next->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
+						//strcpy(tempIndexes->next->start.localStr, (*indexes)->start.localStr);
+						tempIndexes->next->start.localStr = strdup((*indexes)->start.localStr);// Bug fix: Memory leak
 					}
 					else
 						tempIndexes->next->start.localStr = NULL;
 					
 					if((*indexes)->end.localStr)
 					{
-						tempIndexes->next->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
-						strcpy(tempIndexes->next->end.localStr, (*indexes)->end.localStr);
+						//tempIndexes->next->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
+						//strcpy(tempIndexes->next->end.localStr, (*indexes)->end.localStr);
+						tempIndexes->next->end.localStr = strdup((*indexes)->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexes->next->end.localStr = NULL;
@@ -2438,21 +2449,24 @@ void addToDataList(dataList** list, char *variableName, char *variableType, char
 			tempDataList = tempDataList->next;
 		
 		tempDataList->next = (dataList *)malloc(sizeof(dataList));
-		tempDataList->next->variableName = (char *)malloc(sizeof(char)*strlen(variableName));
-		strcpy(tempDataList->next->variableName, variableName);
+		//tempDataList->next->variableName = (char *)malloc(sizeof(char)*strlen(variableName));
+		//strcpy(tempDataList->next->variableName, variableName);
+		tempDataList->next->variableName = strdup(variableName);		// Bug fix: Memory leak
 		
 		if(variableType)
 		{
-			tempDataList->next->variableType = (char *)malloc(sizeof(char)*strlen(variableType));
-			strcpy(tempDataList->next->variableType, variableType);
+			//tempDataList->next->variableType = (char *)malloc(sizeof(char)*strlen(variableType));
+			//strcpy(tempDataList->next->variableType, variableType);
+			tempDataList->next->variableType = strdup(variableType);		// Bug fix: Memory leak
 		}
 		else
 			tempDataList->next->variableType = NULL;
 			
 		if(reductionType)
 		{
-			tempDataList->next->reductionType = (char *)malloc(sizeof(char)*strlen(reductionType));
-			strcpy(tempDataList->next->reductionType, reductionType);
+			//tempDataList->next->reductionType = (char *)malloc(sizeof(char)*strlen(reductionType));
+			//strcpy(tempDataList->next->reductionType, reductionType);
+			tempDataList->next->reductionType = strdup(reductionType);		// Bug fix: Memory leak
 		}
 		else
 			tempDataList->next->reductionType = NULL;
@@ -2470,16 +2484,18 @@ void addToDataList(dataList** list, char *variableName, char *variableType, char
 					
 					if((*indexes)->start.localStr)
 					{
-						tempDataList->next->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
-						strcpy(tempDataList->next->indexes->start.localStr, (*indexes)->start.localStr);
+						//tempDataList->next->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
+						//strcpy(tempDataList->next->indexes->start.localStr, (*indexes)->start.localStr);
+						tempDataList->next->indexes->start.localStr = strdup((*indexes)->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempDataList->next->indexes->start.localStr = NULL;
 					
 					if((*indexes)->end.localStr)
 					{
-						tempDataList->next->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
-						strcpy(tempDataList->next->indexes->end.localStr, (*indexes)->end.localStr);
+						//tempDataList->next->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
+						//strcpy(tempDataList->next->indexes->end.localStr, (*indexes)->end.localStr);
+						tempDataList->next->indexes->end.localStr = strdup((*indexes)->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempDataList->next->indexes->end.localStr = NULL;
@@ -2498,16 +2514,18 @@ void addToDataList(dataList** list, char *variableName, char *variableType, char
 					
 					if((*indexes)->start.localStr)
 					{
-						tempIndexes->next->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
-						strcpy(tempIndexes->next->start.localStr, (*indexes)->start.localStr);
+						//tempIndexes->next->start.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->start.localStr));
+						//strcpy(tempIndexes->next->start.localStr, (*indexes)->start.localStr);
+						tempIndexes->next->start.localStr = strdup((*indexes)->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexes->next->start.localStr = NULL;
 					
 					if((*indexes)->end.localStr)
 					{
-						tempIndexes->next->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
-						strcpy(tempIndexes->next->end.localStr, (*indexes)->end.localStr);
+						//tempIndexes->next->end.localStr = (char *)malloc(sizeof(char)*strlen((*indexes)->end.localStr));
+						//strcpy(tempIndexes->next->end.localStr, (*indexes)->end.localStr);
+						tempIndexes->next->end.localStr = strdup((*indexes)->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexes->next->end.localStr = NULL;
@@ -2540,21 +2558,24 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 		if(!(*SGList))
 		{
 			(*SGList) = (dataList *)malloc(sizeof(dataList));
-			(*SGList)->variableName = (char *)malloc(sizeof(char)*strlen((*tempList)->variableName));
-			strcpy((*SGList)->variableName, (*tempList)->variableName);
+			//(*SGList)->variableName = (char *)malloc(sizeof(char)*strlen((*tempList)->variableName));
+			//strcpy((*SGList)->variableName, (*tempList)->variableName);
+			(*SGList)->variableName = strdup((*tempList)->variableName);		// Bug fix: Memory leak
 		
 			if((*tempList)->variableType)
 				{
-					(*SGList)->variableType = (char *)malloc(sizeof(char)*strlen((*tempList)->variableType));
-					strcpy((*SGList)->variableType, (*tempList)->variableType);
+					//(*SGList)->variableType = (char *)malloc(sizeof(char)*strlen((*tempList)->variableType));
+					//strcpy((*SGList)->variableType, (*tempList)->variableType);
+					(*SGList)->variableType = strdup((*tempList)->variableType);		// Bug fix: Memory leak
 				}
 			else
 				(*SGList)->variableType = NULL;
 				
 			if((*tempList)->reductionType)
 				{
-					(*SGList)->reductionType = (char *)malloc(sizeof(char)*strlen((*tempList)->reductionType));
-					strcpy((*SGList)->reductionType, (*tempList)->reductionType);
+					//(*SGList)->reductionType = (char *)malloc(sizeof(char)*strlen((*tempList)->reductionType));
+					//strcpy((*SGList)->reductionType, (*tempList)->reductionType);
+					(*SGList)->reductionType = strdup((*tempList)->reductionType);		// Bug fix: Memory leak
 				}
 			else
 				(*SGList)->reductionType = NULL;
@@ -2570,16 +2591,18 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 					
 					if(tempIndexes->start.localStr)
 					{
-						(*SGList)->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
-						strcpy((*SGList)->indexes->start.localStr, tempIndexes->start.localStr);
+						//(*SGList)->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
+						//strcpy((*SGList)->indexes->start.localStr, tempIndexes->start.localStr);
+						(*SGList)->indexes->start.localStr = strdup(tempIndexes->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						(*SGList)->indexes->start.localStr = NULL;
 					
 					if(tempIndexes->end.localStr)
 					{
-						(*SGList)->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
-						strcpy((*SGList)->indexes->end.localStr, tempIndexes->end.localStr);
+						//(*SGList)->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
+						//strcpy((*SGList)->indexes->end.localStr, tempIndexes->end.localStr);
+						(*SGList)->indexes->end.localStr = strdup(tempIndexes->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						(*SGList)->indexes->end.localStr = NULL;
@@ -2598,16 +2621,18 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 					
 					if(tempIndexes->start.localStr)
 					{
-						tempIndexesSG->next->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
-						strcpy(tempIndexesSG->next->start.localStr, tempIndexes->start.localStr);
+						//tempIndexesSG->next->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
+						//strcpy(tempIndexesSG->next->start.localStr, tempIndexes->start.localStr);
+						tempIndexesSG->next->start.localStr = strdup(tempIndexes->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexesSG->next->start.localStr = NULL;
 					
 					if(tempIndexes->end.localStr)
 					{
-						tempIndexesSG->next->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
-						strcpy(tempIndexesSG->next->end.localStr, tempIndexes->end.localStr);
+						//tempIndexesSG->next->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
+						//strcpy(tempIndexesSG->next->end.localStr, tempIndexes->end.localStr);
+						tempIndexesSG->next->end.localStr = strdup(tempIndexes->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexesSG->next->end.localStr = NULL;
@@ -2625,13 +2650,16 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 				tempSGList = tempSGList->next;
 			
 			tempSGList->next = (dataList *)malloc(sizeof(dataList));
-			tempSGList->next->variableName = (char *)malloc(sizeof(char)*strlen((*tempList)->variableName));
-			strcpy(tempSGList->next->variableName, (*tempList)->variableName);
+			//tempSGList->next->variableName = (char *)malloc(sizeof(char)*strlen((*tempList)->variableName));
+			//strcpy(tempSGList->next->variableName, (*tempList)->variableName);
+			tempSGList->next->variableName = strdup((*tempList)->variableName);		// Bug fix: Memory leak
 		
 			if((*tempList)->variableType)
 				{
-					tempSGList->next->variableType = (char *)malloc(sizeof(char)*strlen((*tempList)->variableType));
-					strcpy(tempSGList->next->variableType, (*tempList)->variableType);
+					//tempSGList->next->variableType = (char *)malloc(sizeof(char)*strlen((*tempList)->variableType));
+					//strcpy(tempSGList->next->variableType, (*tempList)->variableType);
+					tempSGList->next->variableType = strdup((*tempList)->variableType);		// Bug fix: Memory leak
+					
 				}
 			else
 				tempSGList->next->variableType = NULL;
@@ -2639,8 +2667,9 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 			
 			if((*tempList)->reductionType)
 				{
-					tempSGList->next->reductionType = (char *)malloc(sizeof(char)*strlen((*tempList)->reductionType));
-					strcpy(tempSGList->next->reductionType, (*tempList)->reductionType);
+					//tempSGList->next->reductionType = (char *)malloc(sizeof(char)*strlen((*tempList)->reductionType));
+					//strcpy(tempSGList->next->reductionType, (*tempList)->reductionType);
+					tempSGList->next->reductionType = strdup((*tempList)->reductionType);		// Bug fix: Memory leak
 				}
 			else
 				tempSGList->next->reductionType = NULL;			
@@ -2657,16 +2686,18 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 					
 					if(tempIndexes->start.localStr)
 					{
-						tempSGList->next->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
-						strcpy(tempSGList->next->indexes->start.localStr, tempIndexes->start.localStr);
+						//tempSGList->next->indexes->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
+						//strcpy(tempSGList->next->indexes->start.localStr, tempIndexes->start.localStr);
+						tempSGList->next->indexes->start.localStr = strdup(tempIndexes->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempSGList->next->indexes->start.localStr = NULL;
 					
 					if(tempIndexes->end.localStr)
 					{
-						tempSGList->next->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
-						strcpy(tempSGList->next->indexes->end.localStr, tempIndexes->end.localStr);
+						//tempSGList->next->indexes->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
+						//strcpy(tempSGList->next->indexes->end.localStr, tempIndexes->end.localStr);
+						tempSGList->next->indexes->end.localStr = strdup(tempIndexes->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempSGList->next->indexes->end.localStr = NULL;
@@ -2685,16 +2716,18 @@ void copyDataListToSG(dataList **SGList, dataList** tempList){
 					
 					if(tempIndexes->start.localStr)
 					{
-						tempIndexesSG->next->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
-						strcpy(tempIndexesSG->next->start.localStr, tempIndexes->start.localStr);
+						//tempIndexesSG->next->start.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->start.localStr));
+						//strcpy(tempIndexesSG->next->start.localStr, tempIndexes->start.localStr);
+						tempIndexesSG->next->start.localStr = strdup(tempIndexes->start.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexesSG->next->start.localStr = NULL;
 					
 					if(tempIndexes->end.localStr)
 					{
-						tempIndexesSG->next->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
-						strcpy(tempIndexesSG->next->end.localStr, tempIndexes->end.localStr);
+						//tempIndexesSG->next->end.localStr = (char *)malloc(sizeof(char)*strlen(tempIndexes->end.localStr));
+						//strcpy(tempIndexesSG->next->end.localStr, tempIndexes->end.localStr);
+						tempIndexesSG->next->end.localStr = strdup(tempIndexes->end.localStr);		// Bug fix: Memory leak
 					}
 					else
 						tempIndexesSG->next->end.localStr = NULL;
@@ -3040,8 +3073,9 @@ void addTaskToParallelFunction(parallel_function **GraphFunc, dataList *lists[],
 		
 		if(schedulingPolicyChunk.localStr)
 		{
-			(*tempTasks)->chunkSize.localStr = (char *)malloc(sizeof(char)*strlen(schedulingPolicyChunk.localStr));
-			strcpy((*tempTasks)->chunkSize.localStr, schedulingPolicyChunk.localStr);
+			//(*tempTasks)->chunkSize.localStr = (char *)malloc(sizeof(char)*strlen(schedulingPolicyChunk.localStr));
+			//strcpy((*tempTasks)->chunkSize.localStr, schedulingPolicyChunk.localStr);
+			(*tempTasks)->chunkSize.localStr = strdup(schedulingPolicyChunk.localStr);		// Bug fix: Memory leak
 		}
 		else
 			(*tempTasks)->chunkSize.localStr = NULL;
@@ -3138,8 +3172,9 @@ void addTaskToParallelFunction(parallel_function **GraphFunc, dataList *lists[],
 		
 		if(schedulingPolicyChunk.localStr)
 		{
-			tempTasksPtr->next->chunkSize.localStr   = (char *)malloc(sizeof(char)*strlen(schedulingPolicyChunk.localStr));
-			strcpy(tempTasksPtr->next->chunkSize.localStr, schedulingPolicyChunk.localStr);
+			//tempTasksPtr->next->chunkSize.localStr   = (char *)malloc(sizeof(char)*strlen(schedulingPolicyChunk.localStr));
+			//strcpy(tempTasksPtr->next->chunkSize.localStr, schedulingPolicyChunk.localStr);
+			tempTasksPtr->next->chunkSize.localStr = strdup(schedulingPolicyChunk.localStr);		// Bug fix: Memory leak
 		}
 		else
 			tempTasksPtr->next->chunkSize.localStr = NULL;
@@ -3407,8 +3442,9 @@ void searchVariableList(dataList **list, char* type, char* variable){
 		{
 			if(!tempDataList->variableType)
 			{
-				tempDataList->variableType = (char *)malloc(sizeof(char)*strlen(type));
-				strcpy(tempDataList->variableType, type);
+				//tempDataList->variableType = (char *)malloc(sizeof(char)*strlen(type));
+				//strcpy(tempDataList->variableType, type);
+				tempDataList->variableType = strdup(type);		// Bug fix: Memory leak
 				break;
 			}
 		}

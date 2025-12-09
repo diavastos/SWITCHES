@@ -2144,7 +2144,8 @@ void offlineScheduling_TransitiveReductionOfConsumers(SG** Graph){
         }
             
             
-                    
+        for(i = 0; i < functionCounter; i++)		// Memory Leak Fix
+    		free(tred_array[i]);     				// Memory Leak Fix
         free(tred_array);
         taskCounter = 0;
 		tempFunction = tempGraph->parallel_functions;
@@ -2408,7 +2409,8 @@ void offlineScheduling_TransitiveReductionOfConsumers(SG** Graph){
 
 			
 			/** Take care of section tasks **/
-			
+			for(i = 0; i < taskCounter; i++)		// Memory Leak Fix
+				free(tred_array[i]);				// Memory Leak Fix
 			free(tred_array);
 			taskCounter = 0;
 			// Counter how many section tasks there are in a function -- to allocate the tred_consumer_array[TASKS][TASKS]
@@ -2678,6 +2680,8 @@ void offlineScheduling_TransitiveReductionOfConsumers(SG** Graph){
 					tempSection = tempSection->next;
 			}		
 			tempFunction = tempFunction->next;
+			for(i = 0; i < taskCounter; i++)		// Memory Leak Fix		
+				free(tred_array[i]);				// Memory Leak Fix
 			free(tred_array);
 			taskCounter = 0;
 		}
@@ -2974,7 +2978,8 @@ void offlineScheduling_TransitiveReductionOfProducers(SG** Graph){
 
 			
 			/** Take care of section tasks **/
-			
+			for(i = 0; i < taskCounter; i++)			// Memory Leak Fix
+				free(tred_array[i]);					// Memory Leak Fix
 			free(tred_array);
 			taskCounter = 0;
 			// Counter how many section tasks there are in a function -- to allocate the tred_consumer_array[TASKS][TASKS]
@@ -3244,6 +3249,8 @@ void offlineScheduling_TransitiveReductionOfProducers(SG** Graph){
 					tempSection = tempSection->next;
 			}		
 			tempFunction = tempFunction->next;
+			for(i = 0; i < taskCounter; i++)		// Memory Leak Fix		
+				free(tred_array[i]);				// Memory Leak Fix
 			free(tred_array);
 			taskCounter = 0;
 		}
