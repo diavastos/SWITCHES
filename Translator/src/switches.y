@@ -12,9 +12,6 @@
 %{
     #include "definitions.h"
     
-	/* To hide the harmless shift/reduce conflict on the atomic_type_specifier on line 330*/
-	%expect 1
-    
     /* What we need from flex */
     extern int yylex();
     extern int yyparse();
@@ -90,6 +87,9 @@
 	void yyerror(const char *s);
 %}
 
+
+/* To hide the harmless shift/reduce conflict on the atomic_type_specifier on line 330*/
+	%expect 1
 
  /* ANSI C Language Tokens -- 2011 ISO C Standard Compatible */
 
